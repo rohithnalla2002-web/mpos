@@ -1,0 +1,7 @@
+{
+  "name": "DineFlow - Smart QR Ordering",
+  "description": "A comprehensive restaurant ecosystem featuring QR ordering, payment processing simulation, Kitchen Display System (KDS), and Staff POS management with AI-powered recommendations.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

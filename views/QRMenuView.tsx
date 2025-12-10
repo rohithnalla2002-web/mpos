@@ -28,7 +28,7 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
       }
 
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const API_BASE_URL = import.meta.env.VITE_API_URL;
         const url = `${API_BASE_URL}/qr/menu?restaurant=${restaurantId}&table=${tableId}`;
         console.log('Fetching QR menu from:', url);
         const response = await fetch(url);

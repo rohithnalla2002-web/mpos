@@ -1,6 +1,29 @@
 import { User, UserRole } from '../types';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+// Get API base URL from environment variable
+// If VITE_API_URL is set, use it (should include /api at the end)
+// Otherwise, use localhost fallback
+const getApiBaseUrl = () => {
+  const envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    let url = envUrl.trim();
+    
+    // If URL doesn't start with http:// or https://, add https://
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      url = `https://${url}`;
+    }
+    
+    // Ensure it ends with /api
+    if (!url.endsWith('/api')) {
+      url = url.endsWith('/') ? `${url}api` : `${url}/api`;
+    }
+    
+    return url;
+  }
+  return 'http://localhost:3001/api';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const API = {
   // Login with email and password
@@ -36,7 +59,12 @@ export const API = {
   // Register new user
   register: async (email: string, name: string, password: string, role: UserRole): Promise<User> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      const url = `${API_BASE_URL}/auth/register`;
+      console.log('🔵 Registering user at:', url);
+      console.log('🔵 API_BASE_URL:', API_BASE_URL);
+      console.log('🔵 VITE_API_URL env:', import.meta.env.VITE_API_URL);
+      
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -44,6 +72,8 @@ export const API = {
         body: JSON.stringify({ email, name, password, role }),
       });
 
+      console.log('🔵 Response status:', response.status, response.statusText);
+
       if (!response.ok) {
         let errorMessage = 'Registration failed';
         try {
@@ -52,13 +82,15 @@ export const API = {
         } catch (e) {
           errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
+        console.error('❌ Registration failed:', errorMessage, 'URL:', url);
         throw new Error(errorMessage);
       }
 
       const user = await response.json();
       return user;
     } catch (error: any) {
-      console.error('Registration error:', error);
+      console.error('❌ Registration error:', error);
+      console.error('❌ API_BASE_URL was:', API_BASE_URL);
       throw error;
     }
   },
@@ -66,10 +98,17 @@ export const API = {
   // Register restaurant
   registerRestaurant: async (formData: FormData): Promise<any> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/restaurant/register`, {
+      const url = `${API_BASE_URL}/restaurant/register`;
+      console.log('🔵 Registering restaurant at:', url);
+      console.log('🔵 API_BASE_URL:', API_BASE_URL);
+      console.log('🔵 VITE_API_URL env:', import.meta.env.VITE_API_URL);
+      
+      const response = await fetch(url, {
         method: 'POST',
         body: formData,
       });
+
+      console.log('🔵 Response status:', response.status, response.statusText);
 
       if (!response.ok) {
         let errorMessage = 'Registration failed';
@@ -79,13 +118,15 @@ export const API = {
         } catch (e) {
           errorMessage = `Server error: ${response.status} ${response.statusText}`;
         }
+        console.error('❌ Restaurant registration failed:', errorMessage, 'URL:', url);
         throw new Error(errorMessage);
       }
 
       const result = await response.json();
       return result;
     } catch (error: any) {
-      console.error('Restaurant registration error:', error);
+      console.error('❌ Restaurant registration error:', error);
+      console.error('❌ API_BASE_URL was:', API_BASE_URL);
       throw error;
     }
   },

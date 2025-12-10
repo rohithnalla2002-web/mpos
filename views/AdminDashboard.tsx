@@ -977,7 +977,25 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
 
     setLoading(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+      // Use the same API base URL logic as services/api.ts
+      const getApiBaseUrl = () => {
+        const envUrl = import.meta.env.VITE_API_URL;
+        if (envUrl) {
+          let url = envUrl.trim();
+          // If URL doesn't start with http:// or https://, add https://
+          if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            url = `https://${url}`;
+          }
+          // Ensure it ends with /api
+          if (!url.endsWith('/api')) {
+            url = url.endsWith('/') ? `${url}api` : `${url}/api`;
+          }
+          return url;
+        }
+        return 'http://localhost:3001/api';
+      };
+      
+      const API_BASE_URL = getApiBaseUrl();
       const url = `${API_BASE_URL}/qr/generate?adminId=${adminId}&tableId=${selectedTable}`;
       console.log('🔵 Generating QR code at:', url);
       console.log('🔵 API_BASE_URL:', API_BASE_URL);
@@ -1010,7 +1028,8 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
       setQrUrl(data.url);
     } catch (error: any) {
       console.error('❌ Error generating QR code:', error);
-      console.error('❌ API_BASE_URL was:', import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+      console.error('❌ API_BASE_URL was:', API_BASE_URL);
+      console.error('❌ VITE_API_URL env:', import.meta.env.VITE_API_URL);
       alert(`Failed to generate QR code: ${error.message || 'Please check your backend connection'}`);
     } finally {
       setLoading(false);

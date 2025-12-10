@@ -1125,8 +1125,8 @@ app.get('/api/qr/generate', async (req, res) => {
 
     // Create QR data object
     // Use FRONTEND_URL from environment, or default to hosted frontend URL
-    // For production, set FRONTEND_URL=https://mpos-tyx3.onrender.com in your backend environment variables
-    const baseUrl = process.env.FRONTEND_URL || `https://mpos-tyx3.onrender.com`;
+    // For production, set FRONTEND_URL=https://mpostest.netlify.app in your backend environment variables
+    const baseUrl = process.env.FRONTEND_URL || `https://mpostest.netlify.app`;
     
     // Ensure URL has protocol
     const frontendUrl = baseUrl.startsWith('http://') || baseUrl.startsWith('https://') 

@@ -1124,13 +1124,21 @@ app.get('/api/qr/generate', async (req, res) => {
     }));
 
     // Create QR data object
-    const baseUrl = process.env.FRONTEND_URL || `http://localhost:3000`;
+    // Use FRONTEND_URL from environment, or default to hosted frontend URL
+    // For production, set FRONTEND_URL=https://mpos-tyx3.onrender.com in your backend environment variables
+    const baseUrl = process.env.FRONTEND_URL || `https://mpos-tyx3.onrender.com`;
+    
+    // Ensure URL has protocol
+    const frontendUrl = baseUrl.startsWith('http://') || baseUrl.startsWith('https://') 
+      ? baseUrl 
+      : `https://${baseUrl}`;
+    
     const qrData = {
       restaurantId: admin.id.toString(),
       restaurantName: admin.restaurant_name || 'Restaurant',
       tableId: tableId,
       menu: menuItems,
-      url: `${baseUrl}/menu?restaurant=${admin.id}&table=${tableId}`
+      url: `${frontendUrl}/menu?restaurant=${admin.id}&table=${tableId}`
     };
 
     // Generate QR code as data URL

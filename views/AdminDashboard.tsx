@@ -978,17 +978,40 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
     setLoading(true);
     try {
       const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-      const response = await fetch(`${API_BASE_URL}/qr/generate?adminId=${adminId}&tableId=${selectedTable}`);
+      const url = `${API_BASE_URL}/qr/generate?adminId=${adminId}&tableId=${selectedTable}`;
+      console.log('🔵 Generating QR code at:', url);
+      console.log('🔵 API_BASE_URL:', API_BASE_URL);
+      
+      const response = await fetch(url);
+      
+      console.log('🔵 Response status:', response.status, response.statusText);
+      
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to generate QR code');
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate QR code');
+        } else {
+          const errorText = await response.text();
+          console.error('❌ QR generation failed - non-JSON response:', errorText.substring(0, 200));
+          throw new Error(`Server error: ${response.status} ${response.statusText}`);
+        }
       }
+      
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ Expected JSON but got:', contentType, text.substring(0, 200));
+        throw new Error('Server returned non-JSON response. Check if backend is running correctly.');
+      }
+      
       const data = await response.json();
       setQrCode(data.qrCode);
       setQrUrl(data.url);
     } catch (error: any) {
-      console.error('Error generating QR code:', error);
-      alert(error.message || 'Failed to generate QR code');
+      console.error('❌ Error generating QR code:', error);
+      console.error('❌ API_BASE_URL was:', import.meta.env.VITE_API_URL || 'http://localhost:3001/api');
+      alert(`Failed to generate QR code: ${error.message || 'Please check your backend connection'}`);
     } finally {
       setLoading(false);
     }

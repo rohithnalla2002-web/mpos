@@ -223,37 +223,7 @@ async function initializeDatabase() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_menu_items_admin_id ON menu_items(admin_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_menu_items_category ON menu_items(category)`);
 
-    // Create Ratings table
-    await pool.query(`
-      CREATE TABLE IF NOT EXISTS ratings (
-        id SERIAL PRIMARY KEY,
-        menu_item_id INTEGER REFERENCES menu_items(id) ON DELETE CASCADE,
-        order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
-        user_id INTEGER REFERENCES customer(id) ON DELETE SET NULL,
-        admin_id INTEGER REFERENCES admin(id) ON DELETE CASCADE,
-        rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
-        review TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // Add updated_at column if it doesn't exist (for migration)
-    try {
-      await pool.query(`ALTER TABLE ratings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
-    } catch (error) {
-      if (!error.message.includes('already exists')) {
-        console.warn('Ratings table migration warning:', error.message);
-      }
-    }
-
-    // Create indexes for ratings
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_menu_item_id ON ratings(menu_item_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_order_id ON ratings(order_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id)`);
-    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_admin_id ON ratings(admin_id)`);
-
-    // Create Orders table (linked to restaurant/admin)
+    // Create Orders table (linked to restaurant/admin) - MUST be created before ratings table
     await pool.query(`
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
@@ -284,6 +254,36 @@ async function initializeDatabase() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_admin_id ON orders(admin_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_table_id ON orders(table_id)`);
+
+    // Create Ratings table (MUST be created AFTER orders table since it references orders)
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS ratings (
+        id SERIAL PRIMARY KEY,
+        menu_item_id INTEGER REFERENCES menu_items(id) ON DELETE CASCADE,
+        order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
+        user_id INTEGER REFERENCES customer(id) ON DELETE SET NULL,
+        admin_id INTEGER REFERENCES admin(id) ON DELETE CASCADE,
+        rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+        review TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Add updated_at column if it doesn't exist (for migration)
+    try {
+      await pool.query(`ALTER TABLE ratings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP`);
+    } catch (error) {
+      if (!error.message.includes('already exists')) {
+        console.warn('Ratings table migration warning:', error.message);
+      }
+    }
+
+    // Create indexes for ratings
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_menu_item_id ON ratings(menu_item_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_order_id ON ratings(order_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_admin_id ON ratings(admin_id)`);
 
     console.log('✅ Database tables created/verified');
 

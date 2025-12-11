@@ -288,31 +288,31 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 py-12 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 py-6 sm:py-12 px-4 sm:px-6">
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-6 sm:mb-8">
           <button
             onClick={onBack}
-            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-6 transition-colors"
+            className="flex items-center gap-2 text-slate-600 hover:text-slate-900 mb-4 sm:mb-6 transition-colors touch-manipulation active:scale-95"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="text-sm font-semibold">Back to Home</span>
           </button>
           <div className="text-center">
-            <h1 className="text-4xl font-bold text-slate-900 mb-2 tracking-tight">Restaurant Registration</h1>
-            <p className="text-slate-600 font-medium">Join DineFlow and transform your restaurant operations</p>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-slate-900 mb-2 tracking-tight">Restaurant Registration</h1>
+            <p className="text-sm sm:text-base text-slate-600 font-medium">Join DineFlow and transform your restaurant operations</p>
           </div>
         </div>
 
         {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-6 sm:mb-8">
+          <div className="flex items-center justify-between mb-4 overflow-x-auto pb-2">
             {steps.map((step, index) => (
               <React.Fragment key={step.number}>
-                <div className="flex items-center flex-1">
-                  <div className="flex flex-col items-center flex-1">
-                    <div className={`w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all ${
+                <div className="flex items-center flex-1 min-w-0">
+                  <div className="flex flex-col items-center flex-1 min-w-0">
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center border-2 transition-all flex-shrink-0 ${
                       currentStep > step.number
                         ? 'bg-emerald-500 border-emerald-500 text-white'
                         : currentStep === step.number
@@ -325,7 +325,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                         <step.icon className="w-6 h-6" />
                       )}
                     </div>
-                    <p className={`text-xs font-semibold mt-2 ${
+                    <p className={`text-[10px] sm:text-xs font-semibold mt-2 text-center truncate w-full ${
                       currentStep >= step.number ? 'text-slate-900' : 'text-slate-400'
                     }`}>
                       {step.title}
@@ -343,19 +343,19 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
         </div>
 
         {/* Form Card */}
-        <Card className="p-8 border-0 shadow-xl">
+        <Card className="p-4 sm:p-6 md:p-8 border-0 shadow-xl">
           <form onSubmit={handleSubmit}>
             {/* Step 1: Basic Information */}
             {currentStep === 1 && (
-              <div className="space-y-6 animate-fade-in">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-emerald-100 rounded-lg">
+              <div className="space-y-4 sm:space-y-6 animate-fade-in">
+                <div className="flex items-center gap-3 mb-4 sm:mb-6">
+                  <div className="p-2 bg-emerald-100 rounded-lg flex-shrink-0">
                     <Building2 className="w-5 h-5 text-emerald-600" />
                   </div>
-                  <h2 className="text-2xl font-bold text-slate-900">Basic Information</h2>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900">Basic Information</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Restaurant Name <span className="text-rose-500">*</span>
@@ -364,7 +364,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                       type="text"
                       value={formData.restaurantName}
                       onChange={(e) => handleInputChange('restaurantName', e.target.value)}
-                      className={`w-full border-2 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                      className={`w-full border-2 rounded-xl p-3 sm:p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-base sm:text-sm ${
                         errors.restaurantName ? 'border-rose-500' : 'border-slate-300'
                       }`}
                       placeholder="e.g. The Golden Fork"
@@ -382,7 +382,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                       type="text"
                       value={formData.ownerName}
                       onChange={(e) => handleInputChange('ownerName', e.target.value)}
-                      className={`w-full border-2 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                      className={`w-full border-2 rounded-xl p-3 sm:p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-base sm:text-sm ${
                         errors.ownerName ? 'border-rose-500' : 'border-slate-300'
                       }`}
                       placeholder="John Doe"
@@ -500,7 +500,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                   <h2 className="text-2xl font-bold text-slate-900">Location Details</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="md:col-span-2">
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Street Address <span className="text-rose-500">*</span>
@@ -530,7 +530,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                       type="text"
                       value={formData.city}
                       onChange={(e) => handleInputChange('city', e.target.value)}
-                      className={`w-full border-2 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                      className={`w-full border-2 rounded-xl p-3 sm:p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-base sm:text-sm ${
                         errors.city ? 'border-rose-500' : 'border-slate-300'
                       }`}
                       placeholder="New York"
@@ -548,7 +548,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                       type="text"
                       value={formData.state}
                       onChange={(e) => handleInputChange('state', e.target.value)}
-                      className={`w-full border-2 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                      className={`w-full border-2 rounded-xl p-3 sm:p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-base sm:text-sm ${
                         errors.state ? 'border-rose-500' : 'border-slate-300'
                       }`}
                       placeholder="NY"
@@ -566,7 +566,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                       type="text"
                       value={formData.zipCode}
                       onChange={(e) => handleInputChange('zipCode', e.target.value)}
-                      className={`w-full border-2 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                      className={`w-full border-2 rounded-xl p-3 sm:p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-base sm:text-sm ${
                         errors.zipCode ? 'border-rose-500' : 'border-slate-300'
                       }`}
                       placeholder="10001"
@@ -610,7 +610,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                   <h2 className="text-2xl font-bold text-slate-900">Business Details</h2>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div>
                     <label className="block text-sm font-semibold text-slate-700 mb-2">
                       Business Type <span className="text-rose-500">*</span>
@@ -641,7 +641,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                       type="text"
                       value={formData.taxId}
                       onChange={(e) => handleInputChange('taxId', e.target.value)}
-                      className={`w-full border-2 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                      className={`w-full border-2 rounded-xl p-3 sm:p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-base sm:text-sm ${
                         errors.taxId ? 'border-rose-500' : 'border-slate-300'
                       }`}
                       placeholder="12-3456789"
@@ -768,11 +768,11 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex items-center justify-between mt-8 pt-6 border-t border-slate-200">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-slate-200">
               <button
                 type="button"
                 onClick={currentStep === 1 ? onBack : handlePrevious}
-                className="flex items-center gap-2 px-6 py-3 border-2 border-slate-300 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                className="flex items-center justify-center gap-2 px-6 py-3 border-2 border-slate-300 rounded-xl font-semibold text-slate-700 hover:bg-slate-50 transition-colors touch-manipulation active:scale-95 order-2 sm:order-1 w-full sm:w-auto"
               >
                 <ArrowLeft className="w-4 h-4" />
                 {currentStep === 1 ? 'Back' : 'Previous'}
@@ -782,7 +782,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                 <Button
                   type="button"
                   onClick={handleNext}
-                  className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white border-0 shadow-lg shadow-emerald-500/20"
+                  className="px-6 sm:px-8 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white border-0 shadow-lg shadow-emerald-500/20 touch-manipulation active:scale-95 order-1 sm:order-2 w-full sm:w-auto"
                 >
                   Next Step <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -790,7 +790,7 @@ export const RestaurantRegistration: React.FC<RestaurantRegistrationProps> = ({ 
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="px-8 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white border-0 shadow-lg shadow-emerald-500/20"
+                  className="px-6 sm:px-8 py-3 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white border-0 shadow-lg shadow-emerald-500/20 touch-manipulation active:scale-95 w-full sm:w-auto"
                 >
                   {loading ? (
                     <>

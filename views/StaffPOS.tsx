@@ -49,13 +49,13 @@ export const StaffPOS = ({ user }: { user: User }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 p-6">
-      <header className="mb-8 flex justify-between items-center max-w-7xl mx-auto pt-6">
+    <div className="min-h-screen bg-slate-50 p-4 sm:p-6">
+      <header className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 max-w-7xl mx-auto pt-4 sm:pt-6">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">DineFlow POS</h1>
-          <p className="text-slate-500 text-sm">Floor Management & Order Fulfillment</p>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight bg-gradient-to-r from-emerald-600 to-teal-500 bg-clip-text text-transparent">DineFlow POS</h1>
+          <p className="text-slate-500 text-xs sm:text-sm">Floor Management & Order Fulfillment</p>
         </div>
-        <Button variant="outline" onClick={fetchOrders} className="shadow-sm"><RefreshCcw className="w-4 h-4 mr-2"/> Sync</Button>
+        <Button variant="outline" onClick={fetchOrders} className="shadow-sm w-full sm:w-auto touch-manipulation"><RefreshCcw className="w-4 h-4 mr-2"/> Sync</Button>
       </header>
 
       <div className="max-w-7xl mx-auto space-y-10">
@@ -103,12 +103,12 @@ export const StaffPOS = ({ user }: { user: User }) => {
              <h2 className="text-lg font-bold text-slate-800">Floor Overview</h2>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
             {TABLES.map((tableId, i) => {
               const activeOrder = getActiveOrderForTable(tableId);
               return (
                 <FadeIn key={tableId} delay={i * 50}>
-                  <div className={`p-5 rounded-xl border transition-all duration-300 h-36 flex flex-col justify-between relative overflow-hidden group hover:-translate-y-1 hover:shadow-md ${
+                  <div className={`p-4 sm:p-5 rounded-xl border transition-all duration-300 h-32 sm:h-36 flex flex-col justify-between relative overflow-hidden group hover:-translate-y-1 hover:shadow-md touch-manipulation ${
                     activeOrder 
                       ? 'bg-white border-slate-200' 
                       : 'bg-slate-50 border-slate-100 opacity-70 hover:opacity-100'

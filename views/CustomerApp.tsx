@@ -863,37 +863,40 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
     <div className="min-h-screen bg-white pb-20">
       {/* Header */}
       <header className="sticky top-16 z-40 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
-        <div onClick={() => setScannedTable(null)} className="cursor-pointer group">
-            <h1 className="text-lg font-bold text-slate-800 group-hover:opacity-80 transition-opacity">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between gap-3">
+        <div onClick={() => setScannedTable(null)} className="cursor-pointer group flex-1 min-w-0">
+            <h1 className="text-base sm:text-lg font-bold text-slate-800 group-hover:opacity-80 transition-opacity truncate">
               {restaurantName || 'DineFlow'}
             </h1>
             <p className="text-xs text-slate-500">Table {scannedTable}</p>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
             <Button
               onClick={() => {
                 setShowOrderStatus(true);
                 fetchUserOrders();
               }}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300"
+              className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs sm:text-sm px-3 sm:px-4 py-2 touch-manipulation"
             >
-              <Package className="w-4 h-4 mr-2" />
-              My Orders
+              <Package className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
+              <span className="hidden sm:inline">My Orders</span>
               {userOrders.filter(o => o.status !== OrderStatus.SERVED && o.status !== OrderStatus.CANCELLED).length > 0 && (
-                <span className="ml-2 bg-emerald-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                <span className="ml-1 sm:ml-2 bg-emerald-500 text-white text-xs font-bold px-1.5 sm:px-2 py-0.5 rounded-full">
                   {userOrders.filter(o => o.status !== OrderStatus.SERVED && o.status !== OrderStatus.CANCELLED).length}
                 </span>
               )}
             </Button>
-            <div className="relative">
-              <ShoppingCart className="w-6 h-6 text-slate-700" />
+            <button
+              onClick={() => setShowCartModal(true)}
+              className="relative p-2 hover:bg-slate-100 rounded-lg transition-colors touch-manipulation"
+            >
+              <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6 text-slate-700" />
             {cart.length > 0 && (
-                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 flex items-center justify-center rounded-full">
                 {cart.length}
               </span>
             )}
-            </div>
+            </button>
           </div>
         </div>
       </header>
@@ -910,10 +913,10 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
 
       {/* Filter Buttons */}
       <div className="sticky top-[76px] z-30 bg-white border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex gap-2 overflow-x-auto no-scrollbar">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex gap-2 overflow-x-auto no-scrollbar touch-pan-x">
         <button
           onClick={() => setFilterType('veg')}
-          className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2 ${
+          className={`px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap flex items-center gap-2 touch-manipulation active:scale-95 transition-transform ${
             filterType === 'veg' 
               ? 'bg-green-50 text-green-700 border-2 border-green-500' 
               : 'bg-white text-slate-600 border border-slate-200'
@@ -983,9 +986,9 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
                 </button>
               </div>
             </div>
-            <div ref={topPicksRef} className="flex gap-4 overflow-x-auto no-scrollbar" style={{ scrollBehavior: 'smooth' }}>
+            <div ref={topPicksRef} className="flex gap-3 sm:gap-4 overflow-x-auto no-scrollbar touch-pan-x pb-2" style={{ scrollBehavior: 'smooth' }}>
               {topPicks.map((item) => (
-                <div key={item.id} className="min-w-[300px] md:min-w-[320px] bg-slate-900 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
+                <div key={item.id} className="min-w-[280px] sm:min-w-[300px] md:min-w-[320px] bg-slate-900 rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
                   <div className="relative h-52 md:h-56">
                     <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                     <div className="absolute top-3 left-3">
@@ -1006,7 +1009,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
                       <span className="text-xl font-bold">₹{item.price}</span>
                       <button
                         onClick={() => addToCart(item)}
-                        className="px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition-colors"
+                        className="px-4 sm:px-5 py-2 bg-green-500 hover:bg-green-600 text-white text-sm font-semibold rounded-lg transition-colors touch-manipulation active:scale-95"
                       >
                         ADD
                       </button>
@@ -1066,22 +1069,22 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
                           <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-1.5">
                             <button
                               onClick={() => updateCartQuantity(itemInCart.cartId, -1)}
-                              className="w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors"
+                              className="w-7 h-7 sm:w-6 sm:h-6 flex items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors touch-manipulation active:scale-90"
                             >
-                              <Minus className="w-3 h-3" />
+                              <Minus className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
                             </button>
-                            <span className="font-semibold text-green-700 min-w-[20px] text-center">{quantity}</span>
+                            <span className="font-semibold text-green-700 min-w-[24px] sm:min-w-[20px] text-center text-sm sm:text-base">{quantity}</span>
                             <button
                               onClick={() => addToCart(item)}
-                              className="w-6 h-6 flex items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors"
+                              className="w-7 h-7 sm:w-6 sm:h-6 flex items-center justify-center rounded-full bg-green-500 text-white hover:bg-green-600 transition-colors touch-manipulation active:scale-90"
                             >
-                              <Plus className="w-3 h-3" />
+                              <Plus className="w-3.5 h-3.5 sm:w-3 sm:h-3" />
                             </button>
                           </div>
                         ) : (
                           <button
                             onClick={() => addToCart(item)}
-                            className="px-4 py-1.5 border border-green-500 text-green-600 hover:bg-green-50 text-sm font-semibold rounded-lg transition-colors"
+                            className="px-4 py-2 sm:py-1.5 border border-green-500 text-green-600 hover:bg-green-50 text-sm font-semibold rounded-lg transition-colors touch-manipulation active:scale-95"
                           >
                             ADD
                           </button>
@@ -1089,7 +1092,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
                         <span className="text-xs text-slate-500">Customisable</span>
                       </div>
                     </div>
-                    <div className="w-32 h-32 md:w-40 md:h-40 rounded-lg overflow-hidden shrink-0">
+                    <div className="w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-lg overflow-hidden shrink-0">
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                     </div>
                   </div>
@@ -1112,7 +1115,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
             </div>
             <button
               onClick={() => setShowCartModal(true)}
-              className="px-6 py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors"
+              className="px-6 py-3 sm:py-2 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-lg transition-colors touch-manipulation active:scale-95 text-sm sm:text-base"
             >
               View Cart
             </button>

@@ -17,7 +17,6 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<UserRole>(UserRole.CUSTOMER);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +26,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack }) => {
     try {
       if (isRegistering) {
         if (!name || !email || !password) throw new Error("All fields required");
-        const user = await API.register(email, name, password, role);
+        const user = await API.register(email, name, password, UserRole.CUSTOMER);
         onLogin(user);
       } else {
         if (!email || !password) throw new Error("All fields required");
@@ -79,7 +78,7 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack }) => {
       <div className="absolute top-0 left-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 animate-pulse"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 animate-pulse" style={{ animationDelay: '1s' }}></div>
 
-      <Card className="w-full max-w-md p-8 bg-white/90 backdrop-blur-xl shadow-2xl relative z-10 animate-scale-in border-white/20">
+      <Card className="w-full max-w-md p-6 sm:p-8 bg-white/90 backdrop-blur-xl shadow-2xl relative z-10 animate-scale-in border-white/20 mx-4">
         {onBack && (
           <button
             onClick={onBack}
@@ -144,30 +143,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack }) => {
             </div>
           </div>
 
-          {isRegistering && (
-            <div className="animate-slide-up" style={{ animationDelay: '250ms' }}>
-              <label className="block text-xs font-bold uppercase text-slate-400 mb-1 ml-1">Role</label>
-              <div className="relative">
-                <select 
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as UserRole)}
-                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none appearance-none"
-                >
-                  <option value={UserRole.CUSTOMER}>Customer</option>
-                  <option value={UserRole.STAFF}>Staff</option>
-                  <option value={UserRole.KITCHEN}>Kitchen</option>
-                  <option value={UserRole.ADMIN}>Admin</option>
-                </select>
-                <div className="absolute right-3 top-3.5 pointer-events-none text-slate-400">
-                  <ArrowRight className="w-4 h-4 rotate-90" />
-                </div>
-              </div>
-            </div>
-          )}
 
           {error && <div className="text-rose-500 text-sm text-center bg-rose-50 py-2 rounded-lg animate-fade-in">{error}</div>}
 
-          <Button type="submit" className="w-full py-3 text-lg shadow-emerald-500/25 shadow-xl animate-slide-up" style={{ animationDelay: '300ms' }} disabled={loading}>
+          <Button type="submit" className="w-full py-3 sm:py-3.5 text-base sm:text-lg shadow-emerald-500/25 shadow-xl animate-slide-up touch-manipulation active:scale-95" style={{ animationDelay: '300ms' }} disabled={loading}>
             {loading ? <LoadingSpinner /> : (isRegistering ? 'Create Account' : 'Sign In')}
           </Button>
         </form>
@@ -186,10 +165,10 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack }) => {
         {!isRegistering && (
           <div className="mt-8 pt-8 border-t border-slate-100 animate-fade-in" style={{ animationDelay: '500ms' }}>
             <p className="text-xs font-bold text-slate-400 mb-4 text-center uppercase tracking-widest">Quick Demo Access</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2 sm:gap-3">
               <button 
                 onClick={() => handleQuickLogin('admin@pos.com')}
-                className="flex items-center gap-3 p-3 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-emerald-200 hover:shadow-md transition-all group text-left"
+                className="flex items-center gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl border border-slate-100 bg-slate-50 hover:bg-white hover:border-emerald-200 hover:shadow-md transition-all group text-left touch-manipulation active:scale-95"
               >
                 <div className="p-2 bg-white rounded-lg shadow-sm text-slate-400 group-hover:text-emerald-500 transition-colors">
                   <Shield className="w-5 h-5" />

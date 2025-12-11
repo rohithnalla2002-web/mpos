@@ -13,12 +13,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
       
       {/* --- Navbar --- */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-900/80 backdrop-blur-md border-b border-white/10">
-        <div className="container mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
           <div className="flex items-center gap-2 group cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
-            <div className="bg-emerald-500 p-2 rounded-xl shadow-lg shadow-emerald-500/20 group-hover:rotate-12 transition-transform duration-300">
-              <Utensils className="w-5 h-5 text-white" />
+            <div className="bg-emerald-500 p-1.5 sm:p-2 rounded-xl shadow-lg shadow-emerald-500/20 group-hover:rotate-12 transition-transform duration-300">
+              <Utensils className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
             </div>
-            <span className="text-xl font-bold tracking-tight text-white">DineFlow</span>
+            <span className="text-lg sm:text-xl font-bold tracking-tight text-white">DineFlow</span>
           </div>
           <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
             <a href="#how-it-works" className="hover:text-emerald-400 transition-colors">How it Works</a>
@@ -27,9 +27,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           </div>
           <Button
             onClick={onLogin}
-            className="bg-green-500 text-white hover:bg-green-600 border-none shadow-none text-xs px-5 h-10"
+            className="bg-green-500 text-white hover:bg-green-600 border-none shadow-none text-xs sm:text-sm px-4 sm:px-5 h-9 sm:h-10 touch-manipulation"
           >
-            Login / Demo
+            <span className="hidden sm:inline">Login / Demo</span>
+            <span className="sm:hidden">Login</span>
           </Button>
 
         </div>
@@ -56,29 +57,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
           </FadeIn>
           
           <FadeIn delay={200}>
-            <h1 className="text-6xl md:text-8xl font-black tracking-tighter leading-[1.1] mb-8 bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-8xl font-black tracking-tighter leading-[1.1] mb-6 sm:mb-8 bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400 px-4">
               Eat. Pay. Leave.<br />
               <span className="text-emerald-400">Zero Wait.</span>
             </h1>
           </FadeIn>
 
           <FadeIn delay={400}>
-            <p className="text-xl md:text-2xl text-slate-300 leading-relaxed max-w-2xl mx-auto mb-12 font-light text-shadow-sm">
+            <p className="text-base sm:text-xl md:text-2xl text-slate-300 leading-relaxed max-w-2xl mx-auto mb-8 sm:mb-12 font-light text-shadow-sm px-4">
               Transform your dining experience with our contactless ordering system. No apps to download. No waiters to flag down.
             </p>
           </FadeIn>
 
-          <FadeIn delay={600} className="flex flex-col md:flex-row gap-4 justify-center items-center">
+          <FadeIn delay={600} className="flex flex-col md:flex-row gap-3 sm:gap-4 justify-center items-center px-4">
             <Button 
               onClick={onGetStarted}
-              className="py-4 px-10 text-lg bg-emerald-500 hover:bg-emerald-400 text-white shadow-emerald-500/30 shadow-2xl rounded-full w-full md:w-auto hover:scale-105 transition-transform"
+              className="py-3 sm:py-4 px-8 sm:px-10 text-base sm:text-lg bg-emerald-500 hover:bg-emerald-400 text-white shadow-emerald-500/30 shadow-2xl rounded-full w-full md:w-auto hover:scale-105 transition-transform touch-manipulation active:scale-95"
             >
-              Try the Demo <ArrowRight className="w-5 h-5 ml-2" />
+              Try the Demo <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2" />
             </Button>
             <Button 
               variant="outline"
               onClick={() => document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' })}
-              className="py-4 px-10 text-lg border-white/20 text-white hover:bg-white/10 bg-white/5 backdrop-blur-md rounded-full w-full md:w-auto"
+              className="py-3 sm:py-4 px-8 sm:px-10 text-base sm:text-lg border-white/20 text-white hover:bg-white/10 bg-white/5 backdrop-blur-md rounded-full w-full md:w-auto touch-manipulation active:scale-95"
             >
               See How It Works
             </Button>
@@ -99,7 +100,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
             </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 relative">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 relative">
             {/* Connecting Line (Desktop) */}
             <div className="hidden lg:block absolute top-12 left-0 right-0 h-0.5 bg-gradient-to-r from-emerald-100 via-emerald-200 to-emerald-100 z-0"></div>
 
@@ -135,7 +136,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
              </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 grid-rows-2 gap-6 h-auto md:h-[600px]">
+          <div className="grid grid-cols-1 md:grid-cols-3 grid-rows-auto md:grid-rows-2 gap-4 sm:gap-6 h-auto md:h-[600px]">
              {/* Feature 1: Large Left */}
              <ScrollReveal direction="left" className="md:col-span-2 md:row-span-2">
                <div className="bg-slate-800/50 border border-white/10 rounded-3xl p-10 h-full flex flex-col justify-between overflow-hidden relative group">
@@ -230,7 +231,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onLogin 
             </div>
           </ScrollReveal>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 border-t border-white/10 pt-12">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 border-t border-white/10 pt-8 sm:pt-12">
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="bg-emerald-500 p-1.5 rounded-lg">

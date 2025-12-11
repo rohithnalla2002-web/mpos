@@ -430,13 +430,16 @@ app.post('/api/auth/register', async (req, res) => {
   try {
     const { email, password, name, role } = req.body;
 
-    if (!email || !password || !name || !role) {
-      return res.status(400).json({ error: 'All fields are required' });
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'Email, password, and name are required' });
     }
+
+    // Default to CUSTOMER if role is not provided
+    const userRole = role || 'CUSTOMER';
 
     // Validate role
     const validRoles = ['ADMIN', 'STAFF', 'KITCHEN', 'CUSTOMER'];
-    if (!validRoles.includes(role)) {
+    if (!validRoles.includes(userRole)) {
       return res.status(400).json({ error: 'Invalid role' });
     }
 
@@ -451,7 +454,7 @@ app.post('/api/auth/register', async (req, res) => {
 
     // Determine table name
     let tableName;
-    switch (role) {
+    switch (userRole) {
       case 'ADMIN':
         tableName = 'admin';
         break;
@@ -478,7 +481,7 @@ app.post('/api/auth/register', async (req, res) => {
       id: newUser.id.toString(),
       email: newUser.email,
       name: newUser.name,
-      role: role,
+      role: userRole,
     });
   } catch (error) {
     console.error('Registration error:', error);

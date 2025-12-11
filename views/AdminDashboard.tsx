@@ -9,7 +9,7 @@ import {
   Calendar, Menu as MenuIcon, Search, Mail, UserPlus, ArrowUpRight,
   Activity, Clock, Award, Bell, MoreVertical, Edit2, Trash2, Eye,
   Zap, Target, PieChart, ArrowDownRight, Filter, Download, RefreshCw,
-  QrCode, Download as DownloadIcon
+  QrCode, Download as DownloadIcon, X
 } from 'lucide-react';
 
 // --- Revenue Line Chart Component ---
@@ -222,7 +222,7 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
 };
 
 // --- Sub-Component: Sidebar ---
-const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName }: { activePage: string, setPage: (p: string) => void, onLogout: () => void, restaurantName?: string, userName?: string }) => {
+const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName, isOpen, setIsOpen }: { activePage: string, setPage: (p: string) => void, onLogout: () => void, restaurantName?: string, userName?: string, isOpen: boolean, setIsOpen: (open: boolean) => void }) => {
   const links = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, color: 'emerald' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'blue' },
@@ -233,45 +233,65 @@ const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName }: { 
   ];
 
   return (
-    <div className="w-80 bg-white border-r border-slate-200/60 flex flex-col h-screen fixed left-0 top-0 z-20 shadow-sm backdrop-blur-xl">
+    <>
+      {/* Mobile Overlay */}
+      {isOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+      <div className={`w-80 bg-white border-r border-slate-200/60 flex flex-col h-screen fixed left-0 top-0 z-40 shadow-sm backdrop-blur-xl transition-transform duration-300 lg:translate-x-0 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      }`}>
       {/* Logo Section */}
-      <div className="p-8 border-b border-slate-100">
-        <div className="flex items-center gap-4">
+      <div className="p-4 sm:p-8 border-b border-slate-100">
+        <div className="flex items-center gap-3 sm:gap-4">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 via-teal-400 to-emerald-500 rounded-2xl blur-lg opacity-50"></div>
-            <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 p-3.5 rounded-2xl shadow-lg">
-              <ChefHat className="w-7 h-7 text-white" />
+            <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl shadow-lg">
+              <ChefHat className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
             </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight truncate">
               {restaurantName || 'Restaurant Name'}
             </h1>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">
+            <p className="text-xs text-slate-500 font-medium mt-0.5 truncate">
               {userName || 'Admin'}
             </p>
           </div>
+          {/* Mobile Close Button */}
+          <button
+            onClick={() => setIsOpen(false)}
+            className="lg:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 p-6 space-y-1 overflow-y-auto">
+      <nav className="flex-1 p-4 sm:p-6 space-y-1 overflow-y-auto">
         {links.map(link => {
           const isActive = activePage === link.id;
           return (
             <button
               key={link.id}
-              onClick={() => setPage(link.id)}
-              className={`w-full flex items-center gap-4 px-5 py-3.5 rounded-xl transition-all duration-200 group relative ${
+              onClick={() => {
+                setPage(link.id);
+                setIsOpen(false); // Close mobile menu on navigation
+              }}
+              className={`w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl transition-all duration-200 group relative touch-manipulation ${
                 isActive 
                   ? 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 shadow-sm' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
+                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100'
               }`}
             >
               {isActive && (
                 <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-r-full"></div>
               )}
-              <link.icon className={`w-5 h-5 ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'} transition-colors`} />
+              <link.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'} transition-colors`} />
               <span className={`font-semibold text-sm ${isActive ? 'text-emerald-700' : 'text-slate-700'}`}>{link.label}</span>
               {isActive && (
                 <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
@@ -282,16 +302,17 @@ const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName }: { 
       </nav>
 
       {/* Logout Button */}
-      <div className="p-6 border-t border-slate-100">
+      <div className="p-4 sm:p-6 border-t border-slate-100">
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl transition-all duration-200 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold text-sm shadow-lg shadow-rose-500/20 hover:shadow-xl hover:shadow-rose-500/30"
+          className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl transition-all duration-200 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold text-sm shadow-lg shadow-rose-500/20 hover:shadow-xl hover:shadow-rose-500/30 touch-manipulation active:scale-95"
         >
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
         </button>
       </div>
     </div>
+    </>
   );
 };
 
@@ -1345,6 +1366,7 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
 export const AdminDashboard = ({ user, onLogout }: { user: User, onLogout: () => void }) => {
   const [activePage, setActivePage] = useState('overview');
   const [restaurantName, setRestaurantName] = useState<string | undefined>(user.restaurantName);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Fetch restaurant name on mount and whenever user changes
   useEffect(() => {
@@ -1390,10 +1412,26 @@ export const AdminDashboard = ({ user, onLogout }: { user: User, onLogout: () =>
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex font-sans">
        {/* Sidebar */}
-       <Sidebar activePage={activePage} setPage={setActivePage} onLogout={onLogout} restaurantName={restaurantName} userName={user.name} />
+       <Sidebar 
+         activePage={activePage} 
+         setPage={setActivePage} 
+         onLogout={onLogout} 
+         restaurantName={restaurantName} 
+         userName={user.name}
+         isOpen={sidebarOpen}
+         setIsOpen={setSidebarOpen}
+       />
 
        {/* Main Content Area */}
-       <div className="flex-1 ml-80 p-6 overflow-y-auto h-screen">
+       <div className="flex-1 lg:ml-80 p-4 sm:p-6 overflow-y-auto min-h-screen">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors touch-manipulation"
+          >
+            <MenuIcon className="w-6 h-6 text-slate-700" />
+          </button>
+          
           <div className="max-w-7xl mx-auto">
              {activePage === 'overview' && <AnalyticsView restaurantName={restaurantName} />}
              {activePage === 'analytics' && <AnalyticsView restaurantName={restaurantName} />}

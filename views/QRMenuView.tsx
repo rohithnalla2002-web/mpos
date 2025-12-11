@@ -146,21 +146,21 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
       {/* Header */}
       <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-900">{restaurant?.name || 'Restaurant'}</h1>
-              <p className="text-sm text-slate-600">Table {tableId}</p>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{restaurant?.name || 'Restaurant'}</h1>
+              <p className="text-xs sm:text-sm text-slate-600">Table {tableId}</p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
               <div className="relative">
                 <button
                   onClick={() => setCart(cart.length > 0 ? [] : cart)}
-                  className="relative p-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors"
+                  className="relative p-2.5 sm:p-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors touch-manipulation active:scale-95"
                 >
-                  <ShoppingCart className="w-6 h-6" />
+                  <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
                   {cart.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[10px] sm:text-xs">
                       {cart.length}
                     </span>
                   )}
@@ -172,13 +172,13 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
       </div>
 
       {/* Category Filter */}
-      <div className="max-w-7xl mx-auto px-4 py-4">
-        <div className="flex gap-2 overflow-x-auto pb-2">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+        <div className="flex gap-2 overflow-x-auto pb-2 touch-pan-x no-scrollbar">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setActiveCategory(cat as Category | 'All')}
-              className={`px-4 py-2 rounded-xl font-semibold text-sm whitespace-nowrap transition-all ${
+              className={`px-4 py-2.5 rounded-xl font-semibold text-sm whitespace-nowrap transition-all touch-manipulation active:scale-95 ${
                 activeCategory === cat
                   ? 'bg-emerald-600 text-white shadow-lg'
                   : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
@@ -191,8 +191,8 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
       </div>
 
       {/* Menu Items */}
-      <div className="max-w-7xl mx-auto px-4 pb-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {filteredItems.map((item, index) => (
             <FadeIn key={item.id} delay={index * 50}>
               <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
@@ -207,7 +207,7 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
                   <p className="text-sm text-slate-600 mb-4 line-clamp-2">{item.description}</p>
                   <Button
                     onClick={() => addToCart(item)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white touch-manipulation active:scale-95 text-sm sm:text-base py-2.5 sm:py-3"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add to Cart
@@ -221,13 +221,13 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
 
       {/* Cart Sidebar */}
       {cart.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl p-4 z-20">
+        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl p-4 sm:p-6 z-20">
           <div className="max-w-7xl mx-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg text-slate-900">Cart ({cart.length} items)</h3>
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <h3 className="font-bold text-base sm:text-lg text-slate-900">Cart ({cart.length} items)</h3>
               <button
                 onClick={() => setCart([])}
-                className="text-rose-600 hover:text-rose-700 text-sm font-semibold"
+                className="text-rose-600 hover:text-rose-700 text-sm font-semibold touch-manipulation active:scale-95"
               >
                 Clear
               </button>
@@ -278,7 +278,7 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
             </div>
             <Button
               onClick={handlePlaceOrder}
-              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white py-4 text-lg font-bold shadow-lg"
+              className="w-full bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white py-3 sm:py-4 text-base sm:text-lg font-bold shadow-lg touch-manipulation active:scale-95"
             >
               <CreditCard className="w-5 h-5 mr-2" />
               Place Order

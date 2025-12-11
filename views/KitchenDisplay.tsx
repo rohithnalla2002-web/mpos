@@ -55,20 +55,20 @@ export const KitchenDisplay = ({ user }: { user: User }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-6 font-mono">
-      <header className="mb-8 flex justify-between items-center border-b border-slate-800 pb-6 pt-6">
-        <div>
-           <div className="flex items-center gap-4 mb-2">
-             <div className="p-2 bg-amber-500/20 rounded-lg">
-               <ChefHat className="text-amber-500 w-8 h-8" />
+    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-6 font-mono">
+      <header className="mb-6 sm:mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-4 sm:pb-6 pt-4 sm:pt-6">
+        <div className="flex-1 min-w-0">
+           <div className="flex items-center gap-3 sm:gap-4 mb-2">
+             <div className="p-2 bg-amber-500/20 rounded-lg flex-shrink-0">
+               <ChefHat className="text-amber-500 w-6 h-6 sm:w-8 sm:h-8" />
              </div>
-             <h1 className="text-3xl font-black tracking-tighter bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">DineFlow KDS</h1>
+             <h1 className="text-2xl sm:text-3xl font-black tracking-tighter bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent truncate">DineFlow KDS</h1>
            </div>
-           <p className="text-slate-500 text-sm ml-16">Live Kitchen Operations Feed • {orders.length} Active</p>
+           <p className="text-slate-500 text-xs sm:text-sm ml-0 sm:ml-16">Live Kitchen Operations Feed • {orders.length} Active</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
            <div className="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></div>
-           <span className="text-emerald-500 text-sm font-bold uppercase tracking-wider">System Online</span>
+           <span className="text-emerald-500 text-xs sm:text-sm font-bold uppercase tracking-wider hidden sm:inline">System Online</span>
         </div>
       </header>
 
@@ -94,7 +94,7 @@ export const KitchenDisplay = ({ user }: { user: User }) => {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {!loading && orders.length === 0 && (
           <div className="col-span-full flex flex-col items-center justify-center py-32 text-slate-600 animate-fade-in">
             <ChefHat className="w-24 h-24 mb-4 opacity-20" />
@@ -157,14 +157,14 @@ export const KitchenDisplay = ({ user }: { user: User }) => {
                 {order.status === OrderStatus.PAID ? (
                   <button 
                     onClick={() => handleStartCooking(order.id)}
-                    className="w-full py-3 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition-all active:scale-95 shadow-lg shadow-amber-900/50 flex items-center justify-center gap-2 group"
+                    className="w-full py-3 sm:py-4 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg transition-all active:scale-95 shadow-lg shadow-amber-900/50 flex items-center justify-center gap-2 group touch-manipulation text-sm sm:text-base"
                   >
                     <Flame className="w-4 h-4 group-hover:scale-110 transition-transform" /> Start Cooking
                   </button>
                 ) : (
                   <button 
                     onClick={() => handleMarkReady(order.id)}
-                    className="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all active:scale-95 shadow-lg shadow-emerald-900/50 flex items-center justify-center gap-2 group"
+                    className="w-full py-3 sm:py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-all active:scale-95 shadow-lg shadow-emerald-900/50 flex items-center justify-center gap-2 group touch-manipulation text-sm sm:text-base"
                   >
                     <Check className="w-5 h-5 group-hover:scale-110 transition-transform" /> Mark Ready
                   </button>

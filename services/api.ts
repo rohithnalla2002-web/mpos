@@ -1,4 +1,4 @@
-import { User, UserRole } from '../types';
+import { User, UserRole, AnalyticsData } from '../types';
 
 // Get API base URL from environment variable
 // If VITE_API_URL is set, use it (should include /api at the end)
@@ -515,6 +515,35 @@ export const API = {
       return data.ratings || {};
     } catch (error: any) {
       console.error('Error fetching order ratings:', error);
+      throw error;
+    }
+  },
+
+  // Get analytics data
+  getAnalytics: async (adminId: string, range: string = 'Week'): Promise<AnalyticsData> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/analytics/${adminId}?range=${range}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to fetch analytics';
+        try {
+          const error = await response.json();
+          errorMessage = error.error || errorMessage;
+        } catch (e) {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      console.error('Error fetching analytics:', error);
       throw error;
     }
   },

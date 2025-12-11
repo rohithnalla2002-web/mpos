@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ShoppingCart, Plus, Minus, ChefHat, CreditCard, ArrowRight, Clock, CheckCircle2, XCircle, ScanLine, Sparkles, Star, ChevronLeft, ChevronRight, Package, ArrowLeft, RefreshCw, MessageSquare } from 'lucide-react';
-import { TABLES } from '../constants';
+import { ShoppingCart, Plus, Minus, ChefHat, CreditCard, ArrowRight, Clock, CheckCircle2, XCircle, ScanLine, Star, ChevronLeft, ChevronRight, Package, ArrowLeft, RefreshCw, MessageSquare } from 'lucide-react';
 import { MenuItem, CartItem, Order, OrderStatus, Category, User } from '../types';
 import { MockAPI, subscribe } from '../services/mockBackend';
 import { API, API_BASE_URL } from '../services/api';
-import { getRecommendation } from '../services/geminiService';
 import { Button, Card, Badge, LoadingSpinner, FadeIn } from '../components/ui';
 import { QRScanner } from '../components/QRScanner';
 
@@ -29,8 +27,6 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState(false);
-  const [aiRec, setAiRec] = useState<string>("");
-  const [loadingAi, setLoadingAi] = useState(false);
   const [filterType, setFilterType] = useState<'all' | 'veg' | 'nonveg' | 'bestseller'>('all');
   const topPicksRef = React.useRef<HTMLDivElement>(null);
   const [showCartModal, setShowCartModal] = useState(false);
@@ -116,24 +112,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
     }
   }, [showOrderStatus, user.id]);
 
-  useEffect(() => {
-    if (cart.length > 0 && !currentOrderId) {
-      setLoadingAi(true);
-      const timer = setTimeout(() => {
-        getRecommendation(cart, menuItems)
-          .then(setAiRec)
-          .finally(() => setLoadingAi(false));
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      setAiRec("");
-    }
-  }, [cart, currentOrderId, menuItems]);
 
-  const handleManualSelect = async (table: string) => {
-    const valid = await MockAPI.validateTable(table);
-    if (valid) setScannedTable(table);
-  };
 
   const handleQRScan = async (data: string) => {
     try {
@@ -228,7 +207,6 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
     // If we have restaurant ID, create order via API
     if (restaurantId) {
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
         const items = cart.map(item => ({
           id: item.id,
           name: item.name,
@@ -247,13 +225,15 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
           body: JSON.stringify({
             tableId: scannedTable,
             adminId: restaurantId,
-            userId: user.id, // Include user ID
+            userId: user.id,
             items,
             customerName: user.name || undefined
           }),
         });
 
         if (!response.ok) {
+          const errorText = await response.text();
+          console.error('Order creation failed:', response.status, errorText);
           throw new Error('Failed to create order');
         }
 
@@ -282,8 +262,6 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
     try {
       // If we have restaurant ID, update order status via API
       if (restaurantId) {
-        const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-        
         // Simulate payment processing delay
         await new Promise(resolve => setTimeout(resolve, 1500));
         
@@ -770,21 +748,6 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
                {scanError}
              </div>
           )}
-
-          <div className="glass-panel-dark p-6 rounded-2xl border border-white/10 animate-slide-up" style={{ animationDelay: '100ms' }}>
-            <p className="text-sm font-medium mb-4 text-slate-400 uppercase tracking-wider">Demo Tables</p>
-            <div className="grid grid-cols-4 gap-3">
-              {TABLES.map((t, idx) => (
-                <button
-                  key={t}
-                  onClick={() => handleManualSelect(t)}
-                  className="py-2.5 px-1 bg-slate-800 hover:bg-emerald-600 rounded-lg text-sm font-bold transition-all hover:-translate-y-0.5 border border-slate-700 hover:border-emerald-500"
-                >
-                  {t}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -876,7 +839,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
                 setShowOrderStatus(true);
                 fetchUserOrders();
               }}
-              className="bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300 text-xs sm:text-sm px-3 sm:px-4 py-2 touch-manipulation"
+              className="bg-green-500 hover:bg-green-600 text-white border border-green-600 text-xs sm:text-sm px-3 sm:px-4 py-2 touch-manipulation"
             >
               <Package className="w-3 h-3 sm:w-4 sm:h-4 sm:mr-2" />
               <span className="hidden sm:inline">My Orders</span>

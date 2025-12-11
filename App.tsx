@@ -53,9 +53,15 @@ export default function App() {
   useEffect(() => {
     if (isLoading) return;
     
-    // Allow registration and login pages without authentication
-    if (currentRoute === 'registration' || currentRoute === 'login' || currentRoute === 'landing') {
-      // Don't redirect if user is on these public pages
+    // If user is logged in and tries to access login/registration, redirect to dashboard
+    if (currentUser && (currentRoute === 'login' || currentRoute === 'registration')) {
+      navigate('dashboard', true);
+      return;
+    }
+    
+    // Allow registration and login pages without authentication (only if user is not logged in)
+    if ((currentRoute === 'registration' || currentRoute === 'login' || currentRoute === 'landing') && !currentUser) {
+      // Don't redirect if user is on these public pages and not logged in
       return;
     }
     
@@ -142,6 +148,11 @@ export default function App() {
 
   // Route to appropriate page based on URL
   if (currentRoute === 'landing') {
+    // If user is already logged in, redirect to dashboard
+    if (currentUser) {
+      navigate('dashboard', true);
+      return null;
+    }
     return <LandingPage 
       onGetStarted={() => navigate('registration')}
       onLogin={() => navigate('login')}
@@ -180,6 +191,11 @@ export default function App() {
   }
 
   if (currentRoute === 'login') {
+    // If user is already logged in, redirect to dashboard
+    if (currentUser) {
+      navigate('dashboard', true);
+      return null;
+    }
     return <Auth 
       onLogin={handleLogin}
       onBack={() => navigate('landing')}

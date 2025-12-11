@@ -80,4 +80,6 @@ export interface AnalyticsData {
   totalOrders: number;
   averageRating: number;
   revenueTrend: { label: string; value: number }[]; // For charts
+  revenueChange?: number; // Percentage change from previous period
+  ordersChange?: number; // Percentage change from previous period
 }

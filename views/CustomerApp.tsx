@@ -96,10 +96,56 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
           setOrderStatus(currentOrder.status);
         }
       }
+      // Fetch ratings for all served orders
+      const servedOrders = orders.filter(o => o.status === OrderStatus.SERVED);
+      for (const order of servedOrders) {
+        try {
+          const ratings = await API.getOrderRatings(order.id);
+          setRatingOrders(prev => ({
+            ...prev,
+            [order.id]: ratings
+          }));
+        } catch (error) {
+          console.error(`Error fetching ratings for order ${order.id}:`, error);
+        }
+      }
     } catch (error) {
       console.error('Error fetching user orders:', error);
     } finally {
       setOrdersLoading(false);
+    }
+  };
+
+  // Handle rating submission
+  const handleRatingSubmit = async (orderId: string, ratings: Array<{ menuItemId: string; rating: number; review?: string }>) => {
+    const order = userOrders.find(o => o.id === orderId);
+    if (!order) {
+      console.error('Order not found:', orderId);
+      return;
+    }
+
+    // Get adminId from order (it's included in the API response)
+    const adminId = order.adminId || restaurantId;
+    if (!adminId) {
+      console.error('Admin ID not found for order:', orderId);
+      alert('Unable to submit rating. Restaurant information not found.');
+      return;
+    }
+
+    setSubmittingRatings(prev => ({ ...prev, [orderId]: true }));
+    try {
+      await API.submitRatings(orderId, ratings, user.id, adminId);
+      // Fetch updated ratings
+      const updatedRatings = await API.getOrderRatings(orderId);
+      setRatingOrders(prev => ({
+        ...prev,
+        [orderId]: updatedRatings
+      }));
+    } catch (error) {
+      console.error('Error submitting ratings:', error);
+      alert('Failed to submit ratings. Please try again.');
+    } finally {
+      setSubmittingRatings(prev => ({ ...prev, [orderId]: false }));
     }
   };
 
@@ -453,7 +499,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
             <p className="text-xs text-slate-500">Table #{order.tableId} • {formatDate(order.createdAt)}</p>
           </div>
           <div className="text-right">
-            <p className="font-bold text-slate-900">${order.totalAmount.toFixed(2)}</p>
+            <p className="font-bold text-slate-900">₹{order.totalAmount.toFixed(2)}</p>
           </div>
         </div>
 
@@ -654,7 +700,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
                               <p className="text-sm text-slate-600">Table #{order.tableId} • {formatDate(order.createdAt)}</p>
                             </div>
                             <div className="text-right">
-                              <p className="text-2xl font-bold text-emerald-600">${order.totalAmount.toFixed(2)}</p>
+                              <p className="text-2xl font-bold text-emerald-600">₹{order.totalAmount.toFixed(2)}</p>
                             </div>
                           </div>
                           <div className="border-t border-slate-200 pt-4 mt-4">
@@ -663,7 +709,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
                               {Array.isArray(order.items) && order.items.map((item: any, idx: number) => (
                                 <div key={idx} className="flex justify-between text-sm text-slate-600">
                                   <span>{item.quantity || 1}x {item.name}</span>
-                                  <span className="font-semibold">${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                                  <span className="font-semibold">₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
                                 </div>
                               ))}
                             </div>
@@ -1074,7 +1120,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
           <div className="px-4 py-3 flex items-center justify-between max-w-6xl mx-auto">
             <div>
               <p className="text-xs text-slate-500">{cart.length} items</p>
-              <p className="text-lg font-bold text-slate-900">₹{cartTotal}</p>
+              <p className="text-lg font-bold text-slate-900">₹{cartTotal.toFixed(2)}</p>
             </div>
             <button
               onClick={() => setShowCartModal(true)}
@@ -1166,7 +1212,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
             <div className="border-t border-slate-200 pt-4 mb-4">
               <div className="flex justify-between items-center mb-4">
                 <span className="text-lg font-semibold text-slate-700">Total</span>
-                <span className="text-2xl font-bold text-slate-900">₹{cartTotal}</span>
+                <span className="text-2xl font-bold text-slate-900">₹{cartTotal.toFixed(2)}</span>
               </div>
               <button
                 onClick={() => {
@@ -1202,7 +1248,7 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
 
             <div className="border-t border-slate-100 pt-4 flex justify-between font-bold text-xl text-slate-900">
               <span>Total Amount</span>
-              <span>₹{cartTotal}</span>
+              <span>₹{cartTotal.toFixed(2)}</span>
             </div>
 
             {paymentError && (

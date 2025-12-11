@@ -4,7 +4,7 @@ import { MockAPI, subscribe } from '../services/mockBackend';
 import { API } from '../services/api';
 import { Button, Card, LoadingSpinner, FadeIn, Badge } from '../components/ui';
 import { 
-  Plus, Image as ImageIcon, DollarSign, Settings, LayoutDashboard, 
+  Plus, Image as ImageIcon, IndianRupee, Settings, LayoutDashboard, 
   BarChart3, Users, ChefHat, LogOut, TrendingUp, ShoppingBag, Star, 
   Calendar, Menu as MenuIcon, Search, Mail, UserPlus, ArrowUpRight,
   Activity, Clock, Award, Bell, MoreVertical, Edit2, Trash2, Eye,
@@ -421,7 +421,7 @@ const AnalyticsView = ({ restaurantName, adminId }: { restaurantName?: string, a
             <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-md shadow-emerald-500/20">
-                  <DollarSign className="w-5 h-5 text-white" />
+                  <IndianRupee className="w-5 h-5 text-white" />
                 </div>
                 {data.revenueChange !== undefined && (
                   <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md ${
@@ -442,7 +442,7 @@ const AnalyticsView = ({ restaurantName, adminId }: { restaurantName?: string, a
               </div>
               <div className="mb-1">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Total Revenue</p>
-                <h3 className="text-2xl font-bold text-slate-900">${data.totalRevenue.toLocaleString()}</h3>
+                <h3 className="text-2xl font-bold text-slate-900">₹{data.totalRevenue.toLocaleString()}</h3>
               </div>
               <p className="text-xs text-slate-500">Compared to last {range.toLowerCase()}</p>
             </div>
@@ -697,7 +697,7 @@ const MenuManagementView = ({ adminId }: { adminId: string }) => {
                 <div>
                   <label className="block text-sm font-semibold text-slate-700 mb-2">Price</label>
                   <div className="relative">
-                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input 
                       type="number" step="0.01" required value={price} onChange={e => setPrice(e.target.value)}
                       className="w-full border border-slate-300 rounded-xl pl-12 p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900" 
@@ -802,7 +802,7 @@ const MenuManagementView = ({ adminId }: { adminId: string }) => {
                     <div className="p-5 flex-1 flex flex-col bg-white">
                       <div className="flex justify-between items-start mb-2">
                         <h3 className="font-bold text-slate-900 leading-tight text-lg">{item.name}</h3>
-                        <span className="text-emerald-600 font-bold text-lg">${item.price.toFixed(2)}</span>
+                        <span className="text-emerald-600 font-bold text-lg">₹{item.price.toFixed(2)}</span>
                       </div>
                       <p className="text-sm text-slate-600 line-clamp-2 mb-4 leading-relaxed">{item.description}</p>
                       <div className="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
@@ -1370,7 +1370,7 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
                     </div>
                     <div>
                       <p className="text-slate-500">Total</p>
-                      <p className="font-semibold text-emerald-600">${order.totalAmount.toFixed(2)}</p>
+                      <p className="font-semibold text-emerald-600">₹{order.totalAmount.toFixed(2)}</p>
                     </div>
                     <div>
                       <p className="text-slate-500">Customer</p>
@@ -1389,7 +1389,7 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
                         <div key={idx}>
                           <div className="flex justify-between text-sm text-slate-600">
                             <span>{item.quantity || 1}x {item.name}</span>
-                            <span className="font-semibold">${((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
+                            <span className="font-semibold">₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
                           </div>
                           {item.notes && (
                             <div className="mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded">

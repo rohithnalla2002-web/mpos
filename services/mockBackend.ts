@@ -150,7 +150,7 @@ export const MockAPI = {
     return {
       sessionId: `SESS-${Math.random().toString(36).substring(7)}`,
       amount,
-      currency: 'USD',
+      currency: 'INR',
       status: 'pending'
     };
   },

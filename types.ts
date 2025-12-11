@@ -44,6 +44,7 @@ export interface Order {
   createdAt: number;
   paymentId?: string;
   customerName?: string;
+  adminId?: string;
 }
 
 export interface PaymentSession {

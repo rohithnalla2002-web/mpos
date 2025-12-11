@@ -138,7 +138,7 @@ export const StaffPOS = ({ user }: { user: User }) => {
                     <div className="relative z-10">
                       {activeOrder ? (
                         <>
-                          <div className="text-2xl font-bold text-slate-900 tracking-tight">${activeOrder.totalAmount.toFixed(2)}</div>
+                          <div className="text-2xl font-bold text-slate-900 tracking-tight">₹{activeOrder.totalAmount.toFixed(2)}</div>
                           <div className="text-xs text-slate-500 font-medium">{activeOrder.items.length} items ordered</div>
                         </>
                       ) : (

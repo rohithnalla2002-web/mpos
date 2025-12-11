@@ -202,7 +202,7 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-bold text-slate-900 text-lg">{item.name}</h3>
-                    <span className="text-emerald-600 font-bold">${item.price.toFixed(2)}</span>
+                    <span className="text-emerald-600 font-bold">₹{item.price.toFixed(2)}</span>
                   </div>
                   <p className="text-sm text-slate-600 mb-4 line-clamp-2">{item.description}</p>
                   <Button
@@ -237,7 +237,7 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
                 <div key={item.cartId} className="flex items-center justify-between bg-slate-50 p-2 rounded-lg">
                   <div className="flex-1">
                     <p className="font-semibold text-slate-900 text-sm">{item.name}</p>
-                    <p className="text-emerald-600 font-bold">${item.price.toFixed(2)}</p>
+                    <p className="text-emerald-600 font-bold">₹{item.price.toFixed(2)}</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button
@@ -265,7 +265,7 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
             </div>
             <div className="flex items-center justify-between mb-4">
               <span className="text-lg font-bold text-slate-900">Total:</span>
-              <span className="text-2xl font-bold text-emerald-600">${cartTotal.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-emerald-600">₹{cartTotal.toFixed(2)}</span>
             </div>
             <div className="mb-3">
               <input

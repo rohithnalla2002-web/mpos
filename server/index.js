@@ -1164,6 +1164,213 @@ app.get('/api/qr/generate', async (req, res) => {
   }
 });
 
+// Get analytics data for admin dashboard
+app.get('/api/analytics/:adminId', async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const { range = 'Week' } = req.query;
+
+    if (!adminId) {
+      return res.status(400).json({ error: 'Admin ID is required' });
+    }
+
+    // Verify admin exists
+    const adminCheck = await pool.query('SELECT id FROM admin WHERE id = $1', [adminId]);
+    if (adminCheck.rows.length === 0) {
+      return res.status(404).json({ error: 'Restaurant not found' });
+    }
+
+    // Calculate date range based on time range
+    const now = new Date();
+    let startDate = new Date();
+    let labels = [];
+    let groupBy;
+
+    switch (range) {
+      case 'Today':
+        startDate.setHours(0, 0, 0, 0);
+        groupBy = 'hour';
+        labels = Array.from({ length: 8 }, (_, i) => {
+          const hour = 10 + i;
+          return hour <= 12 ? `${hour}am` : `${hour - 12}pm`;
+        });
+        break;
+      case 'Week':
+        startDate.setDate(now.getDate() - 7);
+        groupBy = 'day';
+        labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        break;
+      case 'Month':
+        startDate.setMonth(now.getMonth() - 1);
+        groupBy = 'week';
+        labels = ['Week 1', 'Week 2', 'Week 3', 'Week 4'];
+        break;
+      case 'Year':
+        startDate.setFullYear(now.getFullYear() - 1);
+        groupBy = 'month';
+        labels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        break;
+      default:
+        startDate.setDate(now.getDate() - 7);
+        groupBy = 'day';
+        labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    }
+
+    // Calculate previous period start date for comparison
+    let previousStartDate = new Date(startDate);
+    const periodDiff = now.getTime() - startDate.getTime();
+    previousStartDate.setTime(startDate.getTime() - periodDiff);
+
+    // Get total revenue (sum of all paid/completed orders) for current period
+    const revenueResult = await pool.query(
+      `SELECT COALESCE(SUM(total_amount), 0) as total_revenue
+       FROM orders 
+       WHERE admin_id = $1 
+       AND status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'SERVED')
+       AND created_at >= $2`,
+      [adminId, startDate]
+    );
+    const totalRevenue = parseFloat(revenueResult.rows[0].total_revenue || 0);
+
+    // Get total revenue for previous period (for comparison)
+    const prevRevenueResult = await pool.query(
+      `SELECT COALESCE(SUM(total_amount), 0) as total_revenue
+       FROM orders 
+       WHERE admin_id = $1 
+       AND status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'SERVED')
+       AND created_at >= $2 AND created_at < $3`,
+      [adminId, previousStartDate, startDate]
+    );
+    const prevTotalRevenue = parseFloat(prevRevenueResult.rows[0].total_revenue || 0);
+    const revenueChange = prevTotalRevenue > 0 ? ((totalRevenue - prevTotalRevenue) / prevTotalRevenue) * 100 : 0;
+
+    // Get total orders count for current period
+    const ordersResult = await pool.query(
+      `SELECT COUNT(*) as total_orders
+       FROM orders 
+       WHERE admin_id = $1 
+       AND created_at >= $2`,
+      [adminId, startDate]
+    );
+    const totalOrders = parseInt(ordersResult.rows[0].total_orders || 0);
+
+    // Get total orders for previous period (for comparison)
+    const prevOrdersResult = await pool.query(
+      `SELECT COUNT(*) as total_orders
+       FROM orders 
+       WHERE admin_id = $1 
+       AND created_at >= $2 AND created_at < $3`,
+      [adminId, previousStartDate, startDate]
+    );
+    const prevTotalOrders = parseInt(prevOrdersResult.rows[0].total_orders || 0);
+    const ordersChange = prevTotalOrders > 0 ? ((totalOrders - prevTotalOrders) / prevTotalOrders) * 100 : 0;
+
+    // Get average rating from ratings table for the current period
+    const ratingResult = await pool.query(
+      `SELECT COALESCE(AVG(r.rating), 0) as avg_rating
+       FROM ratings r
+       INNER JOIN orders o ON r.order_id = o.id
+       WHERE r.admin_id = $1 
+       AND o.created_at >= $2`,
+      [adminId, startDate]
+    );
+    const averageRating = parseFloat(ratingResult.rows[0].avg_rating || 0);
+
+    // Get revenue trend data grouped by time period
+    let revenueTrendQuery;
+    if (range === 'Today') {
+      revenueTrendQuery = `
+        SELECT 
+          EXTRACT(HOUR FROM created_at) as period,
+          COALESCE(SUM(total_amount), 0) as revenue
+        FROM orders
+        WHERE admin_id = $1 
+        AND status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'SERVED')
+        AND created_at >= $2
+        GROUP BY EXTRACT(HOUR FROM created_at)
+        ORDER BY period
+      `;
+    } else if (range === 'Week') {
+      revenueTrendQuery = `
+        SELECT 
+          EXTRACT(DOW FROM created_at) as period,
+          COALESCE(SUM(total_amount), 0) as revenue
+        FROM orders
+        WHERE admin_id = $1 
+        AND status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'SERVED')
+        AND created_at >= $2
+        GROUP BY EXTRACT(DOW FROM created_at)
+        ORDER BY period
+      `;
+    } else if (range === 'Month') {
+      revenueTrendQuery = `
+        SELECT 
+          EXTRACT(WEEK FROM created_at) - EXTRACT(WEEK FROM $2::date) + 1 as period,
+          COALESCE(SUM(total_amount), 0) as revenue
+        FROM orders
+        WHERE admin_id = $1 
+        AND status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'SERVED')
+        AND created_at >= $2
+        GROUP BY EXTRACT(WEEK FROM created_at)
+        ORDER BY period
+      `;
+    } else { // Year
+      revenueTrendQuery = `
+        SELECT 
+          EXTRACT(MONTH FROM created_at) as period,
+          COALESCE(SUM(total_amount), 0) as revenue
+        FROM orders
+        WHERE admin_id = $1 
+        AND status IN ('PAID', 'IN_PROGRESS', 'READY_FOR_PICKUP', 'SERVED')
+        AND created_at >= $2
+        GROUP BY EXTRACT(MONTH FROM created_at)
+        ORDER BY period
+      `;
+    }
+
+    const trendResult = await pool.query(revenueTrendQuery, [adminId, startDate]);
+    
+    // Map database results to labels
+    const revenueTrend = labels.map((label, index) => {
+      let periodValue;
+      if (range === 'Today') {
+        periodValue = 10 + index; // 10am to 5pm
+      } else if (range === 'Week') {
+        // PostgreSQL DOW: 0=Sunday, 1=Monday, 2=Tuesday, etc.
+        // Our labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        // So index 0 (Mon) = DOW 1, index 6 (Sun) = DOW 0
+        periodValue = index === 6 ? 0 : index + 1;
+      } else if (range === 'Month') {
+        periodValue = index + 1; // Week 1-4
+      } else {
+        periodValue = index + 1; // Month 1-12
+      }
+
+      const trendData = trendResult.rows.find(row => {
+        const dbPeriod = parseFloat(row.period);
+        return Math.abs(dbPeriod - periodValue) < 0.5; // Handle floating point comparison
+      });
+
+      return {
+        label,
+        value: trendData ? parseFloat(trendData.revenue || 0) : 0
+      };
+    });
+
+    res.json({
+      totalRevenue,
+      totalOrders,
+      averageRating: averageRating || 0,
+      revenueTrend,
+      revenueChange: revenueChange || 0,
+      ordersChange: ordersChange || 0
+    });
+  } catch (error) {
+    console.error('Error fetching analytics:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Get restaurant menu for QR code access (public endpoint)
 app.get('/api/qr/menu', async (req, res) => {
   try {

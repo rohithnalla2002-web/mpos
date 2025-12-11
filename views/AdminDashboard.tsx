@@ -9,7 +9,7 @@ import {
   Calendar, Menu as MenuIcon, Search, Mail, UserPlus, ArrowUpRight,
   Activity, Clock, Award, Bell, MoreVertical, Edit2, Trash2, Eye,
   Zap, Target, PieChart, ArrowDownRight, Filter, Download, RefreshCw,
-  QrCode, Download as DownloadIcon, X
+  QrCode, Download as DownloadIcon, X, TrendingDown
 } from 'lucide-react';
 
 // --- Revenue Line Chart Component ---
@@ -21,10 +21,21 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
   const innerWidth = chartWidth - padding.left - padding.right;
   const innerHeight = chartHeight - padding.top - padding.bottom;
 
+  // Handle empty data
+  if (!data || data.length === 0) {
+    return (
+      <div className="w-full h-72 flex items-center justify-center text-slate-400">
+        <div className="text-center">
+          <p className="text-sm">No data available</p>
+        </div>
+      </div>
+    );
+  }
+
   // Calculate points for the line
   const points = data.map((point, i) => {
     const x = padding.left + (i / (data.length - 1 || 1)) * innerWidth;
-    const y = padding.top + innerHeight - (point.value / maxVal) * innerHeight;
+    const y = padding.top + innerHeight - (point.value / maxVal || 0) * innerHeight;
     return { x, y, ...point };
   });
 
@@ -317,20 +328,52 @@ const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName, isOp
 };
 
 // --- Sub-View: Overview & Analytics ---
-const AnalyticsView = ({ restaurantName }: { restaurantName?: string }) => {
+const AnalyticsView = ({ restaurantName, adminId }: { restaurantName?: string, adminId: string }) => {
   const [range, setRange] = useState<TimeRange>('Week');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    MockAPI.getAnalytics(range).then(d => {
-      setData(d);
-      setLoading(false);
-    });
-  }, [range]);
+    const fetchAnalytics = async () => {
+      if (!adminId) {
+        setLoading(false);
+        return;
+      }
+      
+      setLoading(true);
+      try {
+        const analyticsData = await API.getAnalytics(adminId, range);
+        setData(analyticsData);
+      } catch (error) {
+        console.error('Error fetching analytics:', error);
+        // Set default/empty data instead of mock data
+        // Create default revenue trend based on range
+        const defaultLabels = range === 'Today' 
+          ? ['10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm']
+          : range === 'Week'
+          ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+          : range === 'Month'
+          ? ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+          : ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        
+        setData({
+          totalRevenue: 0,
+          totalOrders: 0,
+          averageRating: 0,
+          revenueTrend: defaultLabels.map(label => ({ label, value: 0 })),
+          revenueChange: 0,
+          ordersChange: 0
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, [range, adminId]);
 
-  const maxVal = data ? Math.max(...data.revenueTrend.map(d => d.value)) : 100;
+  const maxVal = data && data.revenueTrend && data.revenueTrend.length > 0 
+    ? Math.max(...data.revenueTrend.map(d => d.value || 0), 100) 
+    : 100;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -380,10 +423,22 @@ const AnalyticsView = ({ restaurantName }: { restaurantName?: string }) => {
                 <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-md shadow-emerald-500/20">
                   <DollarSign className="w-5 h-5 text-white" />
                 </div>
-                <div className="flex items-center gap-1 px-2.5 py-1 bg-emerald-50 rounded-md">
-                  <TrendingUp className="w-3 h-3 text-emerald-600" />
-                  <span className="text-xs font-bold text-emerald-700">+12.5%</span>
-                </div>
+                {data.revenueChange !== undefined && (
+                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md ${
+                    data.revenueChange >= 0 ? 'bg-emerald-50' : 'bg-rose-50'
+                  }`}>
+                    {data.revenueChange >= 0 ? (
+                      <TrendingUp className="w-3 h-3 text-emerald-600" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3 text-rose-600" />
+                    )}
+                    <span className={`text-xs font-bold ${
+                      data.revenueChange >= 0 ? 'text-emerald-700' : 'text-rose-700'
+                    }`}>
+                      {data.revenueChange >= 0 ? '+' : ''}{data.revenueChange.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="mb-1">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Total Revenue</p>
@@ -397,10 +452,22 @@ const AnalyticsView = ({ restaurantName }: { restaurantName?: string }) => {
                 <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md shadow-blue-500/20">
                   <ShoppingBag className="w-5 h-5 text-white" />
                 </div>
-                <div className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 rounded-md">
-                  <TrendingUp className="w-3 h-3 text-blue-600" />
-                  <span className="text-xs font-bold text-blue-700">+5.2%</span>
-                </div>
+                {data.ordersChange !== undefined && (
+                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md ${
+                    data.ordersChange >= 0 ? 'bg-blue-50' : 'bg-rose-50'
+                  }`}>
+                    {data.ordersChange >= 0 ? (
+                      <TrendingUp className="w-3 h-3 text-blue-600" />
+                    ) : (
+                      <TrendingDown className="w-3 h-3 text-rose-600" />
+                    )}
+                    <span className={`text-xs font-bold ${
+                      data.ordersChange >= 0 ? 'text-blue-700' : 'text-rose-700'
+                    }`}>
+                      {data.ordersChange >= 0 ? '+' : ''}{data.ordersChange.toFixed(1)}%
+                    </span>
+                  </div>
+                )}
               </div>
               <div className="mb-1">
                 <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Total Orders</p>
@@ -438,7 +505,15 @@ const AnalyticsView = ({ restaurantName }: { restaurantName?: string }) => {
                 <span className="text-xs font-semibold text-slate-700">Live Data</span>
               </div>
             </div>
-            <RevenueLineChart data={data.revenueTrend} maxVal={maxVal} />
+            {data && data.revenueTrend && data.revenueTrend.length > 0 ? (
+              <RevenueLineChart data={data.revenueTrend} maxVal={maxVal} />
+            ) : (
+              <div className="w-full h-72 flex items-center justify-center text-slate-400">
+                <div className="text-center">
+                  <p className="text-sm">No revenue data available</p>
+                </div>
+              </div>
+            )}
           </div>
         </>
       )}
@@ -1433,8 +1508,8 @@ export const AdminDashboard = ({ user, onLogout }: { user: User, onLogout: () =>
           </button>
           
           <div className="max-w-7xl mx-auto">
-             {activePage === 'overview' && <AnalyticsView restaurantName={restaurantName} />}
-             {activePage === 'analytics' && <AnalyticsView restaurantName={restaurantName} />}
+             {activePage === 'overview' && <AnalyticsView restaurantName={restaurantName} adminId={user.id} />}
+             {activePage === 'analytics' && <AnalyticsView restaurantName={restaurantName} adminId={user.id} />}
              {activePage === 'menu' && <MenuManagementView adminId={user.id} />}
              {activePage === 'staff' && <StaffManagementView adminId={user.id} />}
              {activePage === 'qrmenu' && <QRMenuView adminId={user.id} restaurantName={restaurantName} />}

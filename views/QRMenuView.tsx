@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { MenuItem, Category, CartItem, OrderStatus } from '../types';
-import { API } from '../services/api';
+import { API, API_BASE_URL } from '../services/api';
 import { Button, LoadingSpinner, FadeIn } from '../components/ui';
 import { ShoppingCart, Plus, Minus, ChefHat, CreditCard, CheckCircle2, XCircle } from 'lucide-react';
 
@@ -28,7 +28,6 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
       }
 
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_URL;
         const url = `${API_BASE_URL}/qr/menu?restaurant=${restaurantId}&table=${tableId}`;
         console.log('Fetching QR menu from:', url);
         const response = await fetch(url);
@@ -77,7 +76,6 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
     if (cart.length === 0) return;
 
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
       const items = cart.map(item => ({
         id: item.id,
         name: item.name,

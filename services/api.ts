@@ -25,6 +25,9 @@ const getApiBaseUrl = () => {
 
 const API_BASE_URL = getApiBaseUrl();
 
+// Export API_BASE_URL for use in components that need direct fetch calls
+export { API_BASE_URL, getApiBaseUrl };
+
 export const API = {
   // Login with email and password
   login: async (email: string, password: string): Promise<User | undefined> => {

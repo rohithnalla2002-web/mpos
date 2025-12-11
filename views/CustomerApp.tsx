@@ -3,7 +3,7 @@ import { ShoppingCart, Plus, Minus, ChefHat, CreditCard, ArrowRight, Clock, Chec
 import { TABLES } from '../constants';
 import { MenuItem, CartItem, Order, OrderStatus, Category, User } from '../types';
 import { MockAPI, subscribe } from '../services/mockBackend';
-import { API } from '../services/api';
+import { API, API_BASE_URL } from '../services/api';
 import { getRecommendation } from '../services/geminiService';
 import { Button, Card, Badge, LoadingSpinner, FadeIn } from '../components/ui';
 import { QRScanner } from '../components/QRScanner';
@@ -46,7 +46,6 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
     
     setMenuLoading(true);
     try {
-      const API_BASE_URL = import.meta.env.VITE_API_URL ;
       const response = await fetch(`${API_BASE_URL}/qr/menu?restaurant=${restId}&table=${tableId}`);
       if (!response.ok) {
         throw new Error('Failed to fetch menu');

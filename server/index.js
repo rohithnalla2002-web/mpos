@@ -1177,17 +1177,24 @@ app.get('/api/qr/generate', async (req, res) => {
 
     // Create QR data - only encode the URL, not the entire menu
     // The menu will be fetched from the server when the QR code is scanned
-    // Use FRONTEND_URL from environment, or default to hosted frontend URL
-    const baseUrl = process.env.FRONTEND_URL || `https://mpostest.netlify.app`;
+    // HARDCODED: Always use localhost:3000 for development
+    // NOTE: This will be used in the QR code URL
+    const baseUrl = `http://localhost:3000`;
     
-    // Ensure URL has protocol
+    // Ensure URL has protocol (should already have it, but just in case)
     const frontendUrl = baseUrl.startsWith('http://') || baseUrl.startsWith('https://') 
       ? baseUrl 
-      : `https://${baseUrl}`;
+      : `http://${baseUrl}`;
     
     const qrUrl = `${frontendUrl}/menu?restaurant=${admin.id}&table=${tableId}`;
 
-    console.log('🔵 Generating QR code for:', qrUrl);
+    // Log the URL being used for QR code generation
+    console.log('🔵 ===== QR CODE GENERATION =====');
+    console.log('🔵 Base URL (hardcoded):', baseUrl);
+    console.log('🔵 Frontend URL:', frontendUrl);
+    console.log('🔵 Final QR URL:', qrUrl);
+    console.log('🔵 This URL will be encoded in the QR code');
+    console.log('🔵 ===============================');
     console.log('🔵 QRCode library available:', typeof QRCode !== 'undefined' && typeof QRCode.toDataURL === 'function');
 
     // Validate QRCode library is available

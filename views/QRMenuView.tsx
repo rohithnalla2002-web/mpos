@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { MenuItem, Category, CartItem, OrderStatus } from '../types';
 import { API, API_BASE_URL } from '../services/api';
 import { Button, LoadingSpinner, FadeIn } from '../components/ui';
@@ -44,11 +44,27 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
         console.log('Menu items details:', data.menu?.map((item: any) => ({ id: item.id, name: item.name, category: item.category })));
         
         setRestaurant(data.restaurant);
-        setMenuItems(data.menu || []);
+        
+        // Ensure menu items are set correctly
+        if (data.menu && Array.isArray(data.menu)) {
+          setMenuItems(data.menu);
+          console.log(`✅ Successfully set ${data.menu.length} menu items`);
+        } else {
+          console.warn('⚠️ Menu data is not an array:', data.menu);
+          setMenuItems([]);
+        }
+        
+        // Update page title with restaurant name
+        if (data.restaurant?.name) {
+          document.title = `${data.restaurant.name} - Menu | DineFlow`;
+        } else {
+          document.title = 'Menu | DineFlow';
+        }
         
         // Log if menu is empty
         if (!data.menu || data.menu.length === 0) {
           console.warn('⚠️ No menu items received for restaurant:', restaurantId);
+          console.warn('⚠️ Response data:', data);
         }
       } catch (error) {
         console.error('Error fetching menu:', error);
@@ -122,11 +138,41 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
     }
   };
 
-  const filteredItems = activeCategory === 'All' 
-    ? menuItems 
-    : menuItems.filter(item => item.category === activeCategory);
+  // Filter menu items by category
+  const filteredItems = useMemo(() => {
+    if (activeCategory === 'All') {
+      return menuItems;
+    }
+    return menuItems.filter(item => {
+      // Match category exactly or handle case-insensitive matching
+      const itemCategory = item.category?.trim();
+      const activeCat = activeCategory.toString().trim();
+      const matches = itemCategory === activeCat || itemCategory?.toLowerCase() === activeCat.toLowerCase();
+      return matches;
+    });
+  }, [menuItems, activeCategory]);
 
-  const categories = ['All', ...Object.values(Category)];
+  // Get unique categories from menu items, plus 'All'
+  const categories = useMemo(() => {
+    const menuCategories = [...new Set(menuItems.map(item => item.category).filter(Boolean))];
+    return ['All', ...menuCategories.sort()];
+  }, [menuItems]);
+  
+  // Debug logging
+  useEffect(() => {
+    console.log('📋 Menu Display Debug:');
+    console.log('  - Total menu items:', menuItems.length);
+    console.log('  - Active category:', activeCategory);
+    console.log('  - Filtered items:', filteredItems.length);
+    console.log('  - Available categories:', categories);
+    if (menuItems.length > 0) {
+      console.log('  - Sample items:', menuItems.slice(0, 3).map(item => ({
+        name: item.name,
+        category: item.category,
+        price: item.price
+      })));
+    }
+  }, [menuItems, activeCategory, filteredItems, categories]);
 
   if (loading) {
     return (
@@ -204,31 +250,48 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
 
       {/* Menu Items */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {filteredItems.map((item, index) => (
-            <FadeIn key={item.id} delay={index * 50}>
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
-                <div className="relative h-48 overflow-hidden bg-slate-100">
-                  <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                </div>
-                <div className="p-4">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-bold text-slate-900 text-lg">{item.name}</h3>
-                    <span className="text-emerald-600 font-bold">₹{item.price.toFixed(2)}</span>
+        {menuItems.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-600 text-lg mb-4">No menu items available</p>
+            <p className="text-slate-500 text-sm">Please contact the restaurant</p>
+          </div>
+        ) : filteredItems.length === 0 ? (
+          <div className="text-center py-12">
+            <p className="text-slate-600 text-lg mb-4">No items in this category</p>
+            <button
+              onClick={() => setActiveCategory('All')}
+              className="text-emerald-600 hover:text-emerald-700 font-semibold"
+            >
+              View all items
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+            {filteredItems.map((item, index) => (
+              <FadeIn key={item.id} delay={index * 50}>
+                <div className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                  <div className="relative h-48 overflow-hidden bg-slate-100">
+                    <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
                   </div>
-                  <p className="text-sm text-slate-600 mb-4 line-clamp-2">{item.description}</p>
-                  <Button
-                    onClick={() => addToCart(item)}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white touch-manipulation active:scale-95 text-sm sm:text-base py-2.5 sm:py-3"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Add to Cart
-                  </Button>
+                  <div className="p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-bold text-slate-900 text-lg">{item.name}</h3>
+                      <span className="text-emerald-600 font-bold">₹{item.price.toFixed(2)}</span>
+                    </div>
+                    <p className="text-sm text-slate-600 mb-4 line-clamp-2">{item.description}</p>
+                    <Button
+                      onClick={() => addToCart(item)}
+                      className="w-full bg-emerald-600 hover:bg-emerald-700 text-white touch-manipulation active:scale-95 text-sm sm:text-base py-2.5 sm:py-3"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Add to Cart
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </FadeIn>
-          ))}
-        </div>
+              </FadeIn>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Cart Sidebar */}

@@ -1606,24 +1606,20 @@ app.get('/api/qr/menu', async (req, res) => {
       );
     }
     
-    // Double-check: filter out any items that don't match the restaurant ID (safety check)
-    // REMOVED category validation to show ALL items - we'll accept any category
+    // Map all menu items - only filter by admin_id match (already done in SQL query)
+    // Don't filter by category or any other criteria - show ALL items for this restaurant
     const menuItems = menuResult.rows
-      .filter(row => {
-        // CRITICAL: Ensure admin_id matches exactly
+      .map((row, index) => {
         const rowAdminId = parseInt(row.admin_id);
+        
+        // Final safety check - log if there's a mismatch (shouldn't happen due to SQL WHERE clause)
         if (rowAdminId !== restaurantId) {
-          console.error(`❌ Filtering out item ${row.id} (${row.name}) - admin_id mismatch: ${rowAdminId} !== ${restaurantId}`);
-          return false;
+          console.error(`❌ CRITICAL: Item ${row.id} (${row.name}) has wrong admin_id: ${rowAdminId} !== ${restaurantId}`);
+          return null; // Will be filtered out
         }
         
-        // Accept any category - don't filter by category
-        console.log(`✅ Including item: ${row.name} (ID: ${row.id}, admin_id: ${rowAdminId}, category: ${row.category})`);
-        return true;
-      })
-      .map(row => {
         const category = row.category?.trim() || 'Mains';
-        return {
+        const menuItem = {
           id: row.id.toString(),
           name: row.name || 'Unnamed Item',
           description: row.description || '',
@@ -1632,9 +1628,13 @@ app.get('/api/qr/menu', async (req, res) => {
           image: row.image || `https://loremflickr.com/400/300/food,dish?random=${row.id}`,
           isVegetarian: row.is_vegetarian || false,
           isSpicy: row.is_spicy || false,
-          isOutOfStock: row.is_out_of_stock || false, // Include actual out of stock status
+          isOutOfStock: row.is_out_of_stock || false,
         };
-      });
+        
+        console.log(`✅ Item ${index + 1}: ${menuItem.name} (Category: ${menuItem.category}, Price: ₹${menuItem.price})`);
+        return menuItem;
+      })
+      .filter(item => item !== null); // Remove any null items from admin_id mismatch
     
     console.log(`🔵 After filtering: ${menuItems.length} items will be returned`);
     if (menuItems.length > 0) {
@@ -1671,21 +1671,25 @@ app.get('/api/qr/menu', async (req, res) => {
       // Return empty menu instead of error - let frontend handle it
     }
 
-    res.json({
+    // Final check before sending
+    if (menuItems.length === 0 && menuResult.rows.length > 0) {
+      console.error(`❌ CRITICAL ERROR: Query returned ${menuResult.rows.length} items but after processing we have ${menuItems.length} items!`);
+      console.error(`❌ This means items are being filtered out incorrectly!`);
+    }
+
+    const responseData = {
       restaurant: {
         id: adminResult.rows[0].id.toString(),
         name: adminResult.rows[0].restaurant_name || 'Restaurant',
       },
       tableId: table,
-      menu: menuItems,
-      // Include debug info in development
-      _debug: process.env.NODE_ENV === 'development' ? {
-        restaurantId: restaurantId,
-        totalItemsInDb: menuResult.rows.length,
-        itemsReturned: menuItems.length,
-        restaurantName: adminResult.rows[0].restaurant_name
-      } : undefined
-    });
+      menu: menuItems
+    };
+
+    console.log(`✅ FINAL RESPONSE: Sending ${menuItems.length} menu items for restaurant "${adminResult.rows[0].restaurant_name}"`);
+    console.log(`✅ Menu items in response:`, menuItems.map(item => item.name).join(', '));
+
+    res.json(responseData);
   } catch (error) {
     console.error('❌ Error fetching QR menu:', error);
     console.error('❌ Error stack:', error.stack);

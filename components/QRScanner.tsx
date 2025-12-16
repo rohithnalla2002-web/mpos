@@ -20,6 +20,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose }) => {
   useEffect(() => {
     let stream: MediaStream | null = null;
     let animationFrameId: number;
+    let isScanning = true;
 
     const startCamera = async () => {
       try {
@@ -33,7 +34,9 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose }) => {
           videoRef.current.onloadedmetadata = () => {
              videoRef.current?.play();
              setLoading(false);
-             requestAnimationFrame(tick);
+             if (isScanning) {
+               requestAnimationFrame(tick);
+             }
           };
         }
       } catch (err) {
@@ -44,7 +47,7 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose }) => {
     };
 
     const tick = () => {
-      if (!videoRef.current || !canvasRef.current) return;
+      if (!isScanning || !videoRef.current || !canvasRef.current) return;
       
       const video = videoRef.current;
       const canvas = canvasRef.current;
@@ -64,6 +67,9 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose }) => {
 
         if (code && code.data) {
           // Found a code!
+          // Stop scanning immediately
+          isScanning = false;
+          
           // Draw a box around it for feedback
           ctx.beginPath();
           ctx.lineWidth = 4;
@@ -75,23 +81,35 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose }) => {
           ctx.lineTo(code.location.topLeftCorner.x, code.location.topLeftCorner.y);
           ctx.stroke();
 
-          // Stop scanning and return data
-          onScan(code.data);
+          // Stop the camera stream
+          if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+          }
+          cancelAnimationFrame(animationFrameId);
+          
+          // Close scanner and call onScan
+          setTimeout(() => {
+            onClose();
+            onScan(code.data);
+          }, 100); // Small delay to show the detection box
           return; 
         }
       }
-      animationFrameId = requestAnimationFrame(tick);
+      if (isScanning) {
+        animationFrameId = requestAnimationFrame(tick);
+      }
     };
 
     startCamera();
 
     return () => {
+      isScanning = false;
       if (stream) {
         stream.getTracks().forEach(track => track.stop());
       }
       cancelAnimationFrame(animationFrameId);
     };
-  }, [onScan]);
+  }, [onScan, onClose]);
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -149,7 +167,12 @@ export const QRScanner: React.FC<QRScannerProps> = ({ onScan, onClose }) => {
         if (code && code.data) {
           // Found a code!
           setUploading(false);
-          onScan(code.data);
+          // Close scanner first, then scan (with small delay to ensure state updates)
+          onClose();
+          // Use setTimeout to ensure onClose completes before onScan
+          setTimeout(() => {
+            onScan(code.data);
+          }, 100);
         } else {
           setUploading(false);
           setError('No QR code found in the uploaded image. Please try another image.');

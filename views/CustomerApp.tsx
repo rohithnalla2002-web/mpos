@@ -171,58 +171,96 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
 
   const handleQRScan = async (data: string) => {
     try {
-      // Try to parse QR code data as JSON (from our QR generator)
-      let parsed: any = null;
+      console.log('🔵 QR Code scanned (from upload or camera):', data);
+      
+      // Close scanner immediately
+      setShowScanner(false);
+      setScanError(null);
+      
+      // Extract restaurant and table IDs
+      let restaurantId: string | null = null;
       let tableId: string | null = null;
-      let restId: string | null = null;
-      let restName: string | null = null;
-
+      
+      // First, try to extract from URL (handles both full URLs and relative paths)
       try {
-        parsed = JSON.parse(data);
-        // QR code from our system contains restaurantId, tableId, etc.
-        if (parsed.restaurantId) {
-          restId = parsed.restaurantId;
+        // If it's a full URL, parse it; otherwise treat as relative path
+        let url: URL;
+        if (data.startsWith('http://') || data.startsWith('https://')) {
+          url = new URL(data);
+        } else if (data.startsWith('/')) {
+          // Relative path - use current origin
+          url = new URL(data, window.location.origin);
+        } else {
+          // Might be just a path without leading slash
+          url = new URL('/' + data, window.location.origin);
         }
-        if (parsed.tableId) {
-          tableId = parsed.tableId;
-        }
-        if (parsed.restaurantName) {
-          restName = parsed.restaurantName;
-        }
-        // If QR contains menu data directly, use it
-        if (parsed.menu && Array.isArray(parsed.menu)) {
-          setMenuItems(parsed.menu);
-          setRestaurantName(restName);
-        }
-      } catch (e) {
-        // If not JSON, treat as simple table ID
-        tableId = data.trim();
+        
+        restaurantId = url.searchParams.get('restaurant');
+        tableId = url.searchParams.get('table');
+        
+        console.log('🔵 Parsed URL:', { 
+          href: url.href, 
+          pathname: url.pathname, 
+          restaurantId, 
+          tableId 
+        });
+      } catch (urlError) {
+        console.log('⚠️ URL parsing failed, trying regex:', urlError);
+        // If URL parsing fails, try regex extraction
+        const restaurantMatch = data.match(/[?&]restaurant=([^&]+)/);
+        const tableMatch = data.match(/[?&]table=([^&]+)/);
+        if (restaurantMatch) restaurantId = decodeURIComponent(restaurantMatch[1]);
+        if (tableMatch) tableId = decodeURIComponent(tableMatch[1]);
       }
-
-      // If we have restaurant ID, fetch menu from database
-      if (restId && tableId) {
-        setRestaurantId(restId);
-        setScannedTable(tableId);
-        await fetchMenuFromDatabase(restId, tableId);
-        setShowScanner(false);
-        setScanError(null);
-      } else if (tableId) {
-        // Fallback: just table ID, use mock menu
+      
+      // If we don't have IDs from URL, try parsing as JSON
+      if (!restaurantId || !tableId) {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.restaurantId) restaurantId = parsed.restaurantId.toString();
+          if (parsed.tableId) tableId = parsed.tableId.toString();
+          console.log('🔵 Parsed as JSON:', { restaurantId, tableId });
+        } catch (e) {
+          // If not JSON, try regex pattern matching as last resort
+          const urlMatch = data.match(/[?&]restaurant=([^&]+)[&]?table=([^&]+)/);
+          if (urlMatch) {
+            restaurantId = decodeURIComponent(urlMatch[1]);
+            tableId = decodeURIComponent(urlMatch[2]);
+            console.log('🔵 Extracted from URL pattern:', { restaurantId, tableId });
+          }
+        }
+      }
+      
+      // If we have both restaurant and table IDs, navigate immediately
+      if (restaurantId && tableId) {
+        console.log('🔵 ✅ Valid QR code detected! Navigating to menu page:', { restaurantId, tableId });
+        
+        // Build the local menu URL (always use relative path for local navigation)
+        const menuUrl = `/menu?restaurant=${encodeURIComponent(restaurantId)}&table=${encodeURIComponent(tableId)}`;
+        console.log('🔵 Navigation URL:', menuUrl);
+        
+        // Force a full page reload to ensure App.tsx re-renders with new route
+        window.location.href = menuUrl;
+        return;
+      }
+      
+      // Fallback: if we only have table ID, try mock validation
+      if (tableId && !restaurantId) {
+        console.log('⚠️ Only table ID found, trying mock validation');
         const valid = await MockAPI.validateTable(tableId);
         if (valid) {
           setScannedTable(tableId);
-          setShowScanner(false);
           setScanError(null);
         } else {
-          setShowScanner(false);
           setScanError(`Invalid QR Code: ${tableId}`);
         }
       } else {
-        setShowScanner(false);
+        console.error('❌ Invalid QR Code: Missing restaurant or table information');
+        console.error('❌ Scanned data:', data);
         setScanError('Invalid QR Code: Missing restaurant or table information');
       }
     } catch (error) {
-      console.error('Error processing QR scan:', error);
+      console.error('❌ Error processing QR scan:', error);
       setShowScanner(false);
       setScanError('Failed to process QR code. Please try again.');
     }
@@ -624,7 +662,20 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
   };
 
   if (showScanner) {
-    return <QRScanner onScan={handleQRScan} onClose={() => setShowScanner(false)} />;
+    return (
+      <QRScanner 
+        onScan={(data) => {
+          console.log('🔵 QRScanner onScan called with:', data);
+          // Don't close scanner here - let handleQRScan handle it
+          // This ensures navigation happens before component unmounts
+          handleQRScan(data);
+        }} 
+        onClose={() => {
+          console.log('🔵 QRScanner onClose called');
+          setShowScanner(false);
+        }} 
+      />
+    );
   }
 
   // View: Order Status

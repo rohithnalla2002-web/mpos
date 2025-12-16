@@ -53,6 +53,14 @@ export default function App() {
   useEffect(() => {
     if (isLoading) return;
     
+    // Check if we're on the menu route - if so, skip authentication checks
+    const isOnMenuRoute = typeof window !== 'undefined' && 
+      (window.location.pathname === '/menu' || window.location.pathname.startsWith('/menu'));
+    if (isOnMenuRoute && restaurantId && tableId) {
+      // We're on the menu route with valid params - don't redirect
+      return;
+    }
+    
     // If user is logged in and tries to access login/registration, redirect to dashboard
     if (currentUser && (currentRoute === 'login' || currentRoute === 'registration')) {
       navigate('dashboard', true);
@@ -71,12 +79,12 @@ export default function App() {
     } else if (!currentUser && currentRoute === 'dashboard') {
       // User not logged in but trying to access dashboard - redirect to login
       navigate('login', true);
-    } else if (currentUser && currentRoute !== 'dashboard') {
-      // User is logged in but on wrong page - redirect to dashboard
+    } else if (currentUser && currentRoute !== 'dashboard' && !isOnMenuRoute) {
+      // User is logged in but on wrong page (and not on menu route) - redirect to dashboard
       navigate('dashboard', true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentRoute, currentUser, isLoading]);
+  }, [currentRoute, currentUser, isLoading, restaurantId, tableId]);
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
@@ -99,11 +107,20 @@ export default function App() {
   const [urlParams, setUrlParams] = useState<URLSearchParams | null>(null);
   const [isMenuRoute, setIsMenuRoute] = useState(false);
 
+  // Update URL params and route detection whenever location changes
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
       setUrlParams(params);
-      setIsMenuRoute(window.location.pathname === '/menu' || window.location.pathname === '/menu/');
+      const pathname = window.location.pathname;
+      setIsMenuRoute(pathname === '/menu' || pathname === '/menu/' || pathname.startsWith('/menu'));
+      
+      // Log for debugging
+      const restaurantId = params.get('restaurant');
+      const tableId = params.get('table');
+      if (restaurantId || tableId) {
+        console.log('🔵 URL Params detected:', { restaurantId, tableId, pathname });
+      }
     }
   }, [typeof window !== 'undefined' ? window.location.search + window.location.pathname : '']);
   
@@ -113,7 +130,9 @@ export default function App() {
   // Handle redirect from root path with QR params to /menu route
   useEffect(() => {
     if (restaurantId && tableId && typeof window !== 'undefined' && window.location.pathname === '/') {
-      window.history.replaceState({}, '', `/menu?restaurant=${restaurantId}&table=${tableId}`);
+      const newUrl = `/menu?restaurant=${restaurantId}&table=${tableId}`;
+      console.log('🔵 Redirecting to menu route:', newUrl);
+      window.history.replaceState({}, '', newUrl);
       // Update state after redirect
       const params = new URLSearchParams(window.location.search);
       setUrlParams(params);
@@ -135,14 +154,14 @@ export default function App() {
 
   // Check if we're on the menu route (from QR code) - render before other routes
   // This must be checked before any other route handling
-  if (isMenuRoute && restaurantId && tableId) {
-    console.log('Rendering QRMenuView with:', { restaurantId, tableId, isMenuRoute });
+  if ((isMenuRoute || (typeof window !== 'undefined' && window.location.pathname.startsWith('/menu'))) && restaurantId && tableId) {
+    console.log('🔵 Rendering QRMenuView with:', { restaurantId, tableId, isMenuRoute, pathname: typeof window !== 'undefined' ? window.location.pathname : 'N/A' });
     return <QRMenuView restaurantId={restaurantId} tableId={tableId} />;
   }
   
   // Also check for restaurant/table params on root path (fallback for direct QR scan)
   if (restaurantId && tableId && typeof window !== 'undefined' && window.location.pathname === '/') {
-    console.log('Root path with QR params, rendering QRMenuView');
+    console.log('🔵 Root path with QR params, rendering QRMenuView');
     return <QRMenuView restaurantId={restaurantId} tableId={tableId} />;
   }
 

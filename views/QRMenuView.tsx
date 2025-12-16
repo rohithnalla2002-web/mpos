@@ -22,26 +22,57 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
   useEffect(() => {
     const fetchMenu = async () => {
       if (!restaurantId || !tableId) {
-        console.error('Missing restaurantId or tableId:', { restaurantId, tableId });
+        console.error('❌ Missing restaurantId or tableId:', { restaurantId, tableId });
         setLoading(false);
         return;
       }
 
+      console.log('🔵 QRMenuView: Starting menu fetch', { restaurantId, tableId, API_BASE_URL });
+
       try {
         const url = `${API_BASE_URL}/qr/menu?restaurant=${restaurantId}&table=${tableId}`;
-        console.log('Fetching QR menu from:', url);
-        const response = await fetch(url);
+        console.log('🔵 Fetching QR menu from:', url);
+        
+        const response = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        console.log('🔵 Response status:', response.status, response.statusText);
+        
         if (!response.ok) {
           const errorText = await response.text();
-          console.error('Failed to fetch menu:', response.status, errorText);
-          throw new Error(`Failed to fetch menu: ${response.status}`);
+          console.error('❌ Failed to fetch menu:', response.status, errorText);
+          
+          // Try to parse error as JSON
+          let errorMessage = `Failed to fetch menu: ${response.status}`;
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.error || errorMessage;
+          } catch (e) {
+            // Not JSON, use the text
+            errorMessage = errorText || errorMessage;
+          }
+          
+          throw new Error(errorMessage);
         }
+        
         const data = await response.json();
-        console.log('QR Menu data received:', data);
-        console.log('Restaurant ID requested:', restaurantId);
-        console.log('Restaurant received:', data.restaurant);
-        console.log('Menu items received:', data.menu?.length || 0);
-        console.log('Menu items details:', data.menu?.map((item: any) => ({ id: item.id, name: item.name, category: item.category })));
+        console.log('✅ QR Menu data received:', data);
+        console.log('🔵 Restaurant ID requested:', restaurantId);
+        console.log('🔵 Restaurant received:', data.restaurant);
+        console.log('🔵 Menu items received:', data.menu?.length || 0);
+        
+        if (data.menu && data.menu.length > 0) {
+          console.log('🔵 Menu items details:', data.menu.slice(0, 5).map((item: any) => ({ 
+            id: item.id, 
+            name: item.name, 
+            category: item.category,
+            price: item.price 
+          })));
+        }
         
         setRestaurant(data.restaurant);
         
@@ -66,9 +97,19 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
           console.warn('⚠️ No menu items received for restaurant:', restaurantId);
           console.warn('⚠️ Response data:', data);
         }
-      } catch (error) {
-        console.error('Error fetching menu:', error);
-        alert('Failed to load menu. Please try again.');
+      } catch (error: any) {
+        console.error('❌ Error fetching menu:', error);
+        console.error('❌ Error details:', {
+          message: error.message,
+          stack: error.stack,
+          restaurantId,
+          tableId,
+          API_BASE_URL
+        });
+        
+        // Show user-friendly error message
+        const errorMsg = error.message || 'Failed to load menu. Please check your connection and try again.';
+        alert(errorMsg);
       } finally {
         setLoading(false);
       }
@@ -252,8 +293,10 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-20 sm:pb-24">
         {menuItems.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-slate-600 text-lg mb-4">No menu items available</p>
-            <p className="text-slate-500 text-sm">Please contact the restaurant</p>
+            <ChefHat className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+            <p className="text-slate-600 text-lg mb-2 font-semibold">No menu items available</p>
+            <p className="text-slate-500 text-sm mb-4">This restaurant hasn't added any menu items yet.</p>
+            <p className="text-slate-400 text-xs">Restaurant ID: {restaurantId} | Table: {tableId}</p>
           </div>
         ) : filteredItems.length === 0 ? (
           <div className="text-center py-12">

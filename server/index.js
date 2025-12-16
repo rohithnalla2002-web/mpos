@@ -18,7 +18,13 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // Middleware
-app.use(cors());
+// Configure CORS to allow requests from any origin (for public QR menu access)
+app.use(cors({
+  origin: '*', // Allow all origins for public QR menu endpoint
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -1458,12 +1464,42 @@ app.get('/api/analytics/:adminId', async (req, res) => {
   }
 });
 
+// Handle CORS preflight requests for QR menu endpoint
+app.options('/api/qr/menu', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(200);
+});
+
+// Handle CORS preflight requests for QR menu endpoint
+app.options('/api/qr/menu', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(200);
+});
+
 // Get restaurant menu for QR code access (public endpoint)
 app.get('/api/qr/menu', async (req, res) => {
   try {
+    // Set CORS headers explicitly for this endpoint
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    
     const { restaurant, table } = req.query;
 
+    console.log('🔵 QR Menu Request:', { 
+      restaurant, 
+      table, 
+      query: req.query,
+      headers: req.headers,
+      origin: req.headers.origin 
+    });
+
     if (!restaurant || !table) {
+      console.error('❌ Missing required parameters:', { restaurant, table });
       return res.status(400).json({ error: 'Restaurant ID and Table ID are required' });
     }
 
@@ -1689,13 +1725,27 @@ app.get('/api/qr/menu', async (req, res) => {
     console.log(`✅ FINAL RESPONSE: Sending ${menuItems.length} menu items for restaurant "${adminResult.rows[0].restaurant_name}"`);
     console.log(`✅ Menu items in response:`, menuItems.map(item => item.name).join(', '));
 
-    res.json(responseData);
+    // Set response headers for CORS
+    res.setHeader('Content-Type', 'application/json');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    
+    // Send response
+    res.status(200).json(responseData);
   } catch (error) {
     console.error('❌ Error fetching QR menu:', error);
     console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error details:', {
+      message: error.message,
+      name: error.name,
+      code: error.code
+    });
+    
+    // Set error response headers for CORS
+    res.setHeader('Access-Control-Allow-Origin', '*');
     res.status(500).json({ 
       error: 'Internal server error',
-      message: error.message || 'Unknown error occurred'
+      message: error.message || 'Unknown error occurred',
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

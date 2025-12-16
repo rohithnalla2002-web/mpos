@@ -547,5 +547,54 @@ export const API = {
       throw error;
     }
   },
+
+  // Generate QR code for a table
+  generateQR: async (adminId: string, tableId: string): Promise<{ qrCode: string; restaurantName: string; tableId: string; url: string }> => {
+    try {
+      const url = `${API_BASE_URL}/qr/generate?adminId=${adminId}&tableId=${tableId}`;
+      console.log('🔵 Generating QR code at:', url);
+      
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      console.log('🔵 Response status:', response.status, response.statusText);
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to generate QR code';
+        try {
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const error = await response.json();
+            errorMessage = error.error || errorMessage;
+          } else {
+            const errorText = await response.text();
+            console.error('❌ QR generation failed - non-JSON response:', errorText.substring(0, 200));
+            errorMessage = `Server error: ${response.status} ${response.statusText}`;
+          }
+        } catch (e) {
+          errorMessage = `Server error: ${response.status} ${response.statusText}`;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        const text = await response.text();
+        console.error('❌ Expected JSON but got:', contentType, text.substring(0, 200));
+        throw new Error('Server returned non-JSON response. Check if backend is running correctly.');
+      }
+
+      const data = await response.json();
+      return data;
+    } catch (error: any) {
+      console.error('❌ Error generating QR code:', error);
+      console.error('❌ API_BASE_URL was:', API_BASE_URL);
+      throw error;
+    }
+  },
 };
 

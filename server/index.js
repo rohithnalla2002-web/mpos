@@ -1083,52 +1083,78 @@ app.get('/api/qr/generate', async (req, res) => {
   try {
     const { adminId, tableId } = req.query;
 
+    console.log('🔵 QR Generation Request:', { adminId, tableId });
+
+    // Validate input parameters
     if (!adminId || !tableId) {
+      console.error('❌ Missing required parameters:', { adminId, tableId });
       return res.status(400).json({ error: 'Admin ID and Table ID are required' });
     }
 
+    // Validate adminId is a number
+    const adminIdNum = parseInt(adminId);
+    if (isNaN(adminIdNum)) {
+      console.error('❌ Invalid adminId format:', adminId);
+      return res.status(400).json({ error: 'Invalid Admin ID format' });
+    }
+
     // Get admin/restaurant details
-    const adminResult = await pool.query(
-      'SELECT id, restaurant_name, number_of_tables FROM admin WHERE id = $1',
-      [adminId]
-    );
+    let adminResult;
+    try {
+      adminResult = await pool.query(
+        'SELECT id, restaurant_name, number_of_tables FROM admin WHERE id = $1',
+        [adminIdNum]
+      );
+    } catch (dbError) {
+      console.error('❌ Database error fetching admin:', dbError);
+      return res.status(500).json({ 
+        error: 'Database error',
+        message: dbError.message 
+      });
+    }
 
     if (adminResult.rows.length === 0) {
+      console.error('❌ Admin not found:', adminId);
       return res.status(404).json({ error: 'Admin not found' });
     }
 
     const admin = adminResult.rows[0];
+    
+    // Validate admin data
+    if (!admin.id) {
+      console.error('❌ Admin ID is missing from database result');
+      return res.status(500).json({ error: 'Invalid admin data' });
+    }
+
     const numTables = admin.number_of_tables || 20;
 
     // Validate table number
     const tableNum = parseInt(tableId);
     if (isNaN(tableNum) || tableNum < 1 || tableNum > numTables) {
+      console.error('❌ Invalid table number:', { tableId, numTables });
       return res.status(400).json({ error: `Invalid table number. Must be between 1 and ${numTables}` });
     }
 
-    // Get menu items
-    const menuResult = await pool.query(
-      `SELECT id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock 
-       FROM menu_items 
-       WHERE admin_id = $1 AND is_out_of_stock = FALSE
-       ORDER BY category, name`,
-      [adminId]
-    );
+    // Get menu items (optional - not needed for QR code, but good for validation)
+    let menuResult;
+    try {
+      menuResult = await pool.query(
+        `SELECT id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock 
+         FROM menu_items 
+         WHERE admin_id = $1 AND is_out_of_stock = FALSE
+         ORDER BY category, name
+         LIMIT 1`,
+        [adminIdNum]
+      );
+      console.log('🔵 Menu items found:', menuResult.rows.length);
+    } catch (dbError) {
+      console.warn('⚠️ Warning: Could not fetch menu items:', dbError.message);
+      // Continue anyway - menu is not required for QR generation
+    }
 
-    const menuItems = menuResult.rows.map(row => ({
-      id: row.id.toString(),
-      name: row.name,
-      description: row.description,
-      price: parseFloat(row.price),
-      category: row.category,
-      image: row.image || `https://loremflickr.com/400/300/food,dish?random=${row.id}`,
-      isVegetarian: row.is_vegetarian || false,
-      isSpicy: row.is_spicy || false,
-    }));
-
-    // Create QR data object
+    // Create QR data - only encode the URL, not the entire menu
+    // The menu will be fetched from the server when the QR code is scanned
     // Use FRONTEND_URL from environment, or default to hosted frontend URL
-    // For production, set FRONTEND_URL=https://mpostest.netlify.app in your backend environment variables
     const baseUrl = process.env.FRONTEND_URL || `https://mpostest.netlify.app`;
     
     // Ensure URL has protocol
@@ -1136,31 +1162,75 @@ app.get('/api/qr/generate', async (req, res) => {
       ? baseUrl 
       : `https://${baseUrl}`;
     
-    const qrData = {
-      restaurantId: admin.id.toString(),
-      restaurantName: admin.restaurant_name || 'Restaurant',
-      tableId: tableId,
-      menu: menuItems,
-      url: `${frontendUrl}/menu?restaurant=${admin.id}&table=${tableId}`
-    };
+    const qrUrl = `${frontendUrl}/menu?restaurant=${admin.id}&table=${tableId}`;
 
-    // Generate QR code as data URL
-    const qrCodeDataUrl = await QRCode.toDataURL(JSON.stringify(qrData), {
-      errorCorrectionLevel: 'M',
-      type: 'image/png',
-      width: 400,
-      margin: 2
-    });
+    console.log('🔵 Generating QR code for:', qrUrl);
+    console.log('🔵 QRCode library available:', typeof QRCode !== 'undefined' && typeof QRCode.toDataURL === 'function');
+
+    // Validate QRCode library is available
+    if (!QRCode || typeof QRCode.toDataURL !== 'function') {
+      console.error('❌ QRCode library not available or toDataURL method missing');
+      return res.status(500).json({ 
+        error: 'QR code library not available',
+        message: 'QRCode.toDataURL is not a function'
+      });
+    }
+
+    // Generate QR code as data URL - only encode the URL, not the entire menu
+    // This prevents the QR code from being too large
+    // Use simpler options to avoid potential issues with canvas dependencies
+    let qrCodeDataUrl;
+    try {
+      // Try with minimal options first
+      qrCodeDataUrl = await QRCode.toDataURL(qrUrl, {
+        errorCorrectionLevel: 'M',
+        width: 300,
+        margin: 1
+      });
+      
+      if (!qrCodeDataUrl || typeof qrCodeDataUrl !== 'string') {
+        throw new Error('QR code generation returned invalid data');
+      }
+      
+      // Validate it's a data URL
+      if (!qrCodeDataUrl.startsWith('data:image')) {
+        throw new Error('QR code generation returned invalid format');
+      }
+      
+      console.log('✅ QR code generated successfully, length:', qrCodeDataUrl.length);
+    } catch (qrError) {
+      console.error('❌ QRCode.toDataURL error:', qrError);
+      console.error('❌ Error details:', {
+        message: qrError.message,
+        stack: qrError.stack,
+        name: qrError.name,
+        url: qrUrl,
+        urlLength: qrUrl.length,
+        qrCodeType: typeof QRCode,
+        toDataURLType: typeof QRCode?.toDataURL
+      });
+      return res.status(500).json({ 
+        error: 'Failed to generate QR code',
+        message: qrError.message || 'Unknown QR generation error',
+        details: process.env.NODE_ENV === 'development' ? qrError.stack : undefined
+      });
+    }
 
     res.json({
       qrCode: qrCodeDataUrl,
-      restaurantName: admin.restaurant_name,
+      restaurantName: admin.restaurant_name || 'Restaurant',
       tableId: tableId,
-      url: qrData.url
+      url: qrUrl
     });
   } catch (error) {
-    console.error('Error generating QR code:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error('❌ Unexpected error generating QR code:', error);
+    console.error('❌ Error stack:', error.stack);
+    console.error('❌ Error name:', error.name);
+    console.error('❌ Error message:', error.message);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message || 'Unknown error occurred'
+    });
   }
 });
 

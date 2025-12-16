@@ -213,6 +213,13 @@ async function initializeDatabase() {
       await pool.query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS is_out_of_stock BOOLEAN DEFAULT FALSE`);
       await pool.query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS rating DECIMAL(3, 2) DEFAULT 0`);
       await pool.query(`ALTER TABLE menu_items ADD COLUMN IF NOT EXISTS review_count INTEGER DEFAULT 0`);
+      
+      // Check for menu items with NULL admin_id and warn
+      const nullCheck = await pool.query(`SELECT COUNT(*) as count FROM menu_items WHERE admin_id IS NULL`);
+      if (parseInt(nullCheck.rows[0].count) > 0) {
+        console.warn(`⚠️ WARNING: Found ${nullCheck.rows[0].count} menu items with NULL admin_id. These items will not appear in restaurant menus.`);
+        console.warn(`⚠️ Consider updating these items with the correct admin_id.`);
+      }
     } catch (error) {
       if (!error.message.includes('already exists')) {
         console.warn('Menu items migration warning:', error.message);
@@ -1489,13 +1496,22 @@ app.get('/api/qr/menu', async (req, res) => {
       return res.status(400).json({ error: 'Restaurant ID mismatch' });
     }
 
+    // First, check if there are any menu items with NULL admin_id (data integrity check)
+    const nullAdminIdCheck = await pool.query(
+      `SELECT COUNT(*) as count FROM menu_items WHERE admin_id IS NULL`
+    );
+    if (parseInt(nullAdminIdCheck.rows[0].count) > 0) {
+      console.warn(`⚠️ WARNING: Found ${nullAdminIdCheck.rows[0].count} menu items with NULL admin_id!`);
+    }
+
     // Get menu items - ensure we only get items for this specific restaurant
-    // Use explicit integer comparison to ensure we only get items for this restaurant
-    // Also explicitly cast the parameter to integer
+    // Use explicit integer comparison and exclude NULL values
     const menuResult = await pool.query(
       `SELECT id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock, admin_id 
        FROM menu_items 
-       WHERE admin_id = $1::integer AND is_out_of_stock = FALSE
+       WHERE admin_id IS NOT NULL 
+         AND admin_id = $1::integer 
+         AND is_out_of_stock = FALSE
        ORDER BY 
          CASE category
            WHEN 'Starters' THEN 1
@@ -1508,14 +1524,37 @@ app.get('/api/qr/menu', async (req, res) => {
       [restaurantId]
     );
     
-    // Additional verification query to check all menu items for this restaurant
+    // Additional verification query to check all menu items for this restaurant (including out of stock)
     const allItemsCheck = await pool.query(
-      `SELECT id, name, admin_id FROM menu_items WHERE admin_id = $1::integer`,
+      `SELECT id, name, admin_id, is_out_of_stock FROM menu_items 
+       WHERE admin_id IS NOT NULL AND admin_id = $1::integer`,
       [restaurantId]
     );
-    console.log(`🔵 Total menu items (all) for restaurant ${restaurantId}: ${allItemsCheck.rows.length}`);
+    console.log(`🔵 Total menu items (all, including out of stock) for restaurant ${restaurantId}: ${allItemsCheck.rows.length}`);
     if (allItemsCheck.rows.length > 0) {
-      console.log(`🔵 Sample items:`, allItemsCheck.rows.slice(0, 3).map(r => ({ id: r.id, name: r.name, admin_id: r.admin_id })));
+      const inStock = allItemsCheck.rows.filter(r => !r.is_out_of_stock).length;
+      const outOfStock = allItemsCheck.rows.filter(r => r.is_out_of_stock).length;
+      console.log(`🔵   - In stock: ${inStock}`);
+      console.log(`🔵   - Out of stock: ${outOfStock}`);
+      console.log(`🔵 Sample items:`, allItemsCheck.rows.slice(0, 3).map(r => ({ 
+        id: r.id, 
+        name: r.name, 
+        admin_id: r.admin_id,
+        is_out_of_stock: r.is_out_of_stock 
+      })));
+    } else {
+      // Check if there are menu items for OTHER restaurants
+      const otherRestaurantsCheck = await pool.query(
+        `SELECT DISTINCT admin_id, COUNT(*) as count 
+         FROM menu_items 
+         WHERE admin_id IS NOT NULL 
+         GROUP BY admin_id 
+         ORDER BY admin_id`
+      );
+      console.log(`🔵 Menu items exist for other restaurants:`, otherRestaurantsCheck.rows.map(r => ({
+        admin_id: r.admin_id,
+        count: r.count
+      })));
     }
 
     console.log(`🔵 Query executed for restaurant ID: ${restaurantId} (type: ${typeof restaurantId})`);

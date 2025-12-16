@@ -1,5 +1,5 @@
 import { Order, OrderStatus, PaymentSession, MenuItem, CartItem, User, UserRole, AnalyticsData, TimeRange } from '../types';
-import { MENU_ITEMS } from '../constants';
+// Static menu data removed - all menu items come from database
 
 // Simple event emitter for real-time simulation
 type Listener = () => void;
@@ -14,7 +14,8 @@ const notify = () => listeners.forEach(l => l());
 
 // Mock Database State
 let orders: Order[] = [];
-let menu: MenuItem[] = [...MENU_ITEMS]; // Mutable menu
+// No static menu - all menu items come from database
+let menu: MenuItem[] = []; // Empty - menu items come from database only
 let users: User[] = [
   { id: '1', email: 'admin@dineflow.com', name: 'Admin User', role: UserRole.ADMIN },
   { id: '2', email: 'staff@dineflow.com', name: 'Wait Staff', role: UserRole.STAFF },
@@ -107,7 +108,8 @@ export const MockAPI = {
   },
 
   // --- Menu ---
-  getMenu: (): MenuItem[] => menu,
+  // Static menu removed - all menu items come from database via API
+  getMenu: (): MenuItem[] => [], // Always return empty - use API.getMenuItems() instead
 
   addMenuItem: async (item: Omit<MenuItem, 'id'>): Promise<MenuItem> => {
     await new Promise(resolve => setTimeout(resolve, 500));

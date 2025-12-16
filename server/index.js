@@ -1506,12 +1506,12 @@ app.get('/api/qr/menu', async (req, res) => {
 
     // Get menu items - ensure we only get items for this specific restaurant
     // Use explicit integer comparison and exclude NULL values
+    // REMOVED is_out_of_stock filter to show ALL items for debugging
     const menuResult = await pool.query(
       `SELECT id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock, admin_id 
        FROM menu_items 
        WHERE admin_id IS NOT NULL 
-         AND admin_id = $1::integer 
-         AND is_out_of_stock = FALSE
+         AND admin_id = $1::integer
        ORDER BY 
          CASE category
            WHEN 'Starters' THEN 1
@@ -1523,6 +1523,17 @@ app.get('/api/qr/menu', async (req, res) => {
          name`,
       [restaurantId]
     );
+    
+    console.log(`🔵 RAW QUERY RESULT: Found ${menuResult.rows.length} rows from database`);
+    if (menuResult.rows.length > 0) {
+      console.log(`🔵 First 3 raw rows:`, menuResult.rows.slice(0, 3).map(r => ({
+        id: r.id,
+        name: r.name,
+        admin_id: r.admin_id,
+        is_out_of_stock: r.is_out_of_stock,
+        category: r.category
+      })));
+    }
     
     // Additional verification query to check all menu items for this restaurant (including out of stock)
     const allItemsCheck = await pool.query(
@@ -1560,24 +1571,43 @@ app.get('/api/qr/menu', async (req, res) => {
     console.log(`🔵 Query executed for restaurant ID: ${restaurantId} (type: ${typeof restaurantId})`);
     console.log(`🔵 Found ${menuResult.rows.length} menu items in database`);
     
-    // Debug: Log all admin_ids found in the query result
+    // CRITICAL: Verify each menu item's admin_id before processing
     if (menuResult.rows.length > 0) {
+      console.log(`🔵 Verifying admin_id for each menu item...`);
+      menuResult.rows.forEach((row, index) => {
+        const rowAdminId = parseInt(row.admin_id);
+        if (rowAdminId !== restaurantId) {
+          console.error(`❌ MISMATCH at index ${index}: Item "${row.name}" (ID: ${row.id}) has admin_id=${rowAdminId}, expected ${restaurantId}`);
+        } else {
+          console.log(`✅ Item "${row.name}" (ID: ${row.id}) has correct admin_id=${rowAdminId}`);
+        }
+      });
+      
       const adminIds = [...new Set(menuResult.rows.map(row => row.admin_id))];
-      console.log(`🔵 Admin IDs found in query results:`, adminIds);
+      console.log(`🔵 Unique admin IDs found in query results:`, adminIds);
       console.log(`🔵 Expected admin ID: ${restaurantId}`);
       
       // Check if any items have wrong admin_id
       const wrongAdminIdItems = menuResult.rows.filter(row => parseInt(row.admin_id) !== restaurantId);
       if (wrongAdminIdItems.length > 0) {
         console.error(`❌ ERROR: Found ${wrongAdminIdItems.length} items with wrong admin_id!`);
+        console.error(`❌ These items should NOT be returned for restaurant ${restaurantId}`);
         wrongAdminIdItems.forEach(item => {
           console.error(`❌ Item ID: ${item.id}, Name: ${item.name}, admin_id: ${item.admin_id}, Expected: ${restaurantId}`);
         });
       }
+    } else {
+      // If no items found, check what menu items exist in the database
+      const allMenuItemsCheck = await pool.query(
+        `SELECT id, name, admin_id FROM menu_items LIMIT 10`
+      );
+      console.log(`🔵 Sample of ALL menu items in database (first 10):`, 
+        allMenuItemsCheck.rows.map(r => ({ id: r.id, name: r.name, admin_id: r.admin_id }))
+      );
     }
     
     // Double-check: filter out any items that don't match the restaurant ID (safety check)
-    const validCategories = ['Starters', 'Mains', 'Desserts', 'Drinks'];
+    // REMOVED category validation to show ALL items - we'll accept any category
     const menuItems = menuResult.rows
       .filter(row => {
         // CRITICAL: Ensure admin_id matches exactly
@@ -1587,13 +1617,8 @@ app.get('/api/qr/menu', async (req, res) => {
           return false;
         }
         
-        // Only include items with valid categories
-        const category = row.category?.trim();
-        if (!category || !validCategories.includes(category)) {
-          console.warn(`⚠️ Filtering out item ${row.id} - invalid category: ${category}`);
-          return false;
-        }
-        
+        // Accept any category - don't filter by category
+        console.log(`✅ Including item: ${row.name} (ID: ${row.id}, admin_id: ${rowAdminId}, category: ${row.category})`);
         return true;
       })
       .map(row => {
@@ -1603,20 +1628,32 @@ app.get('/api/qr/menu', async (req, res) => {
           name: row.name || 'Unnamed Item',
           description: row.description || '',
           price: parseFloat(row.price) || 0,
-          category: category, // Ensure it matches Category enum
+          category: category, // Use whatever category is in database
           image: row.image || `https://loremflickr.com/400/300/food,dish?random=${row.id}`,
           isVegetarian: row.is_vegetarian || false,
           isSpicy: row.is_spicy || false,
-          isOutOfStock: false, // Already filtered out, but include for consistency
+          isOutOfStock: row.is_out_of_stock || false, // Include actual out of stock status
         };
       });
+    
+    console.log(`🔵 After filtering: ${menuItems.length} items will be returned`);
+    if (menuItems.length > 0) {
+      console.log(`🔵 Menu items to return:`, menuItems.map(item => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        price: item.price
+      })));
+    }
 
-    console.log(`🔵 Returning ${menuItems.length} menu items for restaurant ${restaurantId}, table ${table}`);
+    console.log(`🔵 Final menu items count: ${menuItems.length}`);
     console.log(`🔵 Restaurant name: ${adminResult.rows[0].restaurant_name}`);
     
     // Log first few items for debugging
     if (menuItems.length > 0) {
+      console.log(`✅ Returning ${menuItems.length} menu items for restaurant "${adminResult.rows[0].restaurant_name}" (ID: ${restaurantId})`);
       console.log(`🔵 Sample menu items:`, menuItems.slice(0, 3).map(item => ({ id: item.id, name: item.name, category: item.category })));
+      console.log(`🔵 All menu item names:`, menuItems.map(item => item.name).join(', '));
     } else {
       console.warn(`⚠️ No menu items found for restaurant ${restaurantId}`);
       // Check if there are ANY menu items in the database for this restaurant
@@ -1630,6 +1667,7 @@ app.get('/api/qr/menu', async (req, res) => {
     // Final verification before sending response
     if (menuItems.length === 0) {
       console.warn(`⚠️ WARNING: No menu items to return for restaurant ${restaurantId}`);
+      console.warn(`⚠️ Restaurant name: ${adminResult.rows[0].restaurant_name}`);
       // Return empty menu instead of error - let frontend handle it
     }
 
@@ -1644,7 +1682,8 @@ app.get('/api/qr/menu', async (req, res) => {
       _debug: process.env.NODE_ENV === 'development' ? {
         restaurantId: restaurantId,
         totalItemsInDb: menuResult.rows.length,
-        itemsReturned: menuItems.length
+        itemsReturned: menuItems.length,
+        restaurantName: adminResult.rows[0].restaurant_name
       } : undefined
     });
   } catch (error) {
@@ -1667,19 +1706,36 @@ app.get('/api/qr/menu/debug/:restaurantId', async (req, res) => {
       return res.status(400).json({ error: 'Invalid restaurant ID' });
     }
 
-    // Get all menu items for this restaurant (including out of stock)
+    // Get all menu items for this restaurant (including out of stock and NULL admin_id)
     const allItems = await pool.query(
-      `SELECT id, name, admin_id, is_out_of_stock, category 
+      `SELECT id, name, admin_id, is_out_of_stock, category, price, description
        FROM menu_items 
        WHERE admin_id = $1::integer
        ORDER BY id`,
       [restaurantIdNum]
     );
 
+    // Get ALL menu items in database (for comparison)
+    const allItemsInDb = await pool.query(
+      `SELECT id, name, admin_id, is_out_of_stock, category 
+       FROM menu_items 
+       ORDER BY admin_id, id
+       LIMIT 50`
+    );
+
     // Get restaurant info
     const adminResult = await pool.query(
       'SELECT id, restaurant_name FROM admin WHERE id = $1',
       [restaurantIdNum]
+    );
+
+    // Get menu items grouped by admin_id
+    const itemsByAdmin = await pool.query(
+      `SELECT admin_id, COUNT(*) as count 
+       FROM menu_items 
+       WHERE admin_id IS NOT NULL
+       GROUP BY admin_id 
+       ORDER BY admin_id`
     );
 
     res.json({
@@ -1691,8 +1747,19 @@ app.get('/api/qr/menu/debug/:restaurantId', async (req, res) => {
         name: row.name,
         admin_id: row.admin_id,
         is_out_of_stock: row.is_out_of_stock,
-        category: row.category
-      }))
+        category: row.category,
+        price: row.price,
+        description: row.description
+      })),
+      // Debug info
+      debug: {
+        itemsByAdmin: itemsByAdmin.rows,
+        sampleOfAllItems: allItemsInDb.rows.slice(0, 10).map(r => ({
+          id: r.id,
+          name: r.name,
+          admin_id: r.admin_id
+        }))
+      }
     });
   } catch (error) {
     console.error('Error in debug endpoint:', error);

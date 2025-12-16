@@ -71,14 +71,11 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
     }
   };
 
-  // Only use mock menu if no restaurant ID is set (initial state)
+  // No static menu - only fetch from database when restaurant ID is available
   useEffect(() => {
     if (!restaurantId) {
-      setMenuItems(MockAPI.getMenu());
-      const unsub = subscribe(() => {
-        setMenuItems(MockAPI.getMenu());
-      });
-      return unsub;
+      // Clear menu if no restaurant ID
+      setMenuItems([]);
     }
   }, [restaurantId]);
 

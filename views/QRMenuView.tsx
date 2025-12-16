@@ -38,8 +38,18 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
         }
         const data = await response.json();
         console.log('QR Menu data received:', data);
+        console.log('Restaurant ID requested:', restaurantId);
+        console.log('Restaurant received:', data.restaurant);
+        console.log('Menu items received:', data.menu?.length || 0);
+        console.log('Menu items details:', data.menu?.map((item: any) => ({ id: item.id, name: item.name, category: item.category })));
+        
         setRestaurant(data.restaurant);
         setMenuItems(data.menu || []);
+        
+        // Log if menu is empty
+        if (!data.menu || data.menu.length === 0) {
+          console.warn('⚠️ No menu items received for restaurant:', restaurantId);
+        }
       } catch (error) {
         console.error('Error fetching menu:', error);
         alert('Failed to load menu. Please try again.');
@@ -144,23 +154,25 @@ export const QRMenuView: React.FC<QRMenuViewProps> = ({ restaurantId, tableId })
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-white">
-      {/* Header */}
-      <div className="bg-white border-b border-slate-200 shadow-sm sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
+      {/* Header with Highlighted Restaurant Name */}
+      <div className="bg-gradient-to-r from-emerald-600 to-emerald-500 shadow-lg sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-6">
           <div className="flex items-center justify-between gap-3">
             <div className="flex-1 min-w-0">
-              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 truncate">{restaurant?.name || 'Restaurant'}</h1>
-              <p className="text-xs sm:text-sm text-slate-600">Table {tableId}</p>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-white truncate drop-shadow-lg">
+                {restaurant?.name || 'Restaurant'}
+              </h1>
+              <p className="text-sm sm:text-base text-emerald-50 mt-1 font-medium">Table {tableId}</p>
             </div>
             <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
               <div className="relative">
                 <button
                   onClick={() => setCart(cart.length > 0 ? [] : cart)}
-                  className="relative p-2.5 sm:p-3 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 transition-colors touch-manipulation active:scale-95"
+                  className="relative p-2.5 sm:p-3 bg-white/20 backdrop-blur-sm text-white rounded-xl hover:bg-white/30 transition-all touch-manipulation active:scale-95 border border-white/30 shadow-lg"
                 >
                   <ShoppingCart className="w-5 h-5 sm:w-6 sm:h-6" />
                   {cart.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[10px] sm:text-xs">
+                    <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-xs font-bold rounded-full w-5 h-5 sm:w-6 sm:h-6 flex items-center justify-center text-[10px] sm:text-xs shadow-lg">
                       {cart.length}
                     </span>
                   )}

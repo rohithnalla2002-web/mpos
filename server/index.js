@@ -922,20 +922,30 @@ app.post('/api/menu/add', async (req, res) => {
       return res.status(400).json({ error: 'Name, description, price, category, and adminId are required' });
     }
 
+    // Validate and parse adminId as integer
+    const adminIdNum = parseInt(adminId);
+    if (isNaN(adminIdNum)) {
+      return res.status(400).json({ error: 'Invalid adminId format' });
+    }
+
     // Verify admin exists
-    const adminCheck = await pool.query('SELECT id FROM admin WHERE id = $1', [adminId]);
+    const adminCheck = await pool.query('SELECT id FROM admin WHERE id = $1', [adminIdNum]);
     if (adminCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Admin not found' });
     }
 
     const imgUrl = image || `https://loremflickr.com/400/300/food,dish?random=${Date.now()}`;
 
+    console.log(`🔵 Adding menu item for admin_id: ${adminIdNum}`);
+
     const result = await pool.query(
       `INSERT INTO menu_items (name, description, price, category, image, is_vegetarian, is_spicy, admin_id) 
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) 
-       RETURNING id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock`,
-      [name, description, parseFloat(price), category, imgUrl, isVegetarian || false, isSpicy || false, adminId]
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8::integer) 
+       RETURNING id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock, admin_id`,
+      [name, description, parseFloat(price), category, imgUrl, isVegetarian || false, isSpicy || false, adminIdNum]
     );
+
+    console.log(`✅ Menu item added with admin_id: ${result.rows[0].admin_id}`);
 
     const item = result.rows[0];
     res.status(201).json({
@@ -1450,35 +1460,89 @@ app.get('/api/qr/menu', async (req, res) => {
       return res.status(400).json({ error: 'Restaurant ID and Table ID are required' });
     }
 
+    // Validate and parse restaurant ID
+    const restaurantId = parseInt(restaurant);
+    if (isNaN(restaurantId)) {
+      return res.status(400).json({ error: 'Invalid Restaurant ID format' });
+    }
+
+    console.log(`🔵 Fetching menu for restaurant ${restaurantId}, table ${table}`);
+
     // Get restaurant details
     const adminResult = await pool.query(
       'SELECT id, restaurant_name FROM admin WHERE id = $1',
-      [restaurant]
+      [restaurantId]
     );
 
     if (adminResult.rows.length === 0) {
       return res.status(404).json({ error: 'Restaurant not found' });
     }
 
-    // Get menu items
+    // Get menu items - ensure we only get items for this specific restaurant
+    // Use explicit integer comparison to ensure we only get items for this restaurant
     const menuResult = await pool.query(
-      `SELECT id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock 
+      `SELECT id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock, admin_id 
        FROM menu_items 
-       WHERE admin_id = $1 AND is_out_of_stock = FALSE
-       ORDER BY category, name`,
-      [restaurant]
+       WHERE admin_id = $1::integer AND is_out_of_stock = FALSE
+       ORDER BY 
+         CASE category
+           WHEN 'Starters' THEN 1
+           WHEN 'Mains' THEN 2
+           WHEN 'Desserts' THEN 3
+           WHEN 'Drinks' THEN 4
+           ELSE 5
+         END,
+         name`,
+      [restaurantId]
     );
 
-    const menuItems = menuResult.rows.map(row => ({
-      id: row.id.toString(),
-      name: row.name,
-      description: row.description,
-      price: parseFloat(row.price),
-      category: row.category,
-      image: row.image || `https://loremflickr.com/400/300/food,dish?random=${row.id}`,
-      isVegetarian: row.is_vegetarian || false,
-      isSpicy: row.is_spicy || false,
-    }));
+    console.log(`🔵 Query executed for restaurant ID: ${restaurantId} (type: ${typeof restaurantId})`);
+    console.log(`🔵 Found ${menuResult.rows.length} menu items in database`);
+    
+    // Double-check: filter out any items that don't match the restaurant ID (safety check)
+    const validCategories = ['Starters', 'Mains', 'Desserts', 'Drinks'];
+    const menuItems = menuResult.rows
+      .filter(row => {
+        // CRITICAL: Ensure admin_id matches exactly
+        const rowAdminId = parseInt(row.admin_id);
+        if (rowAdminId !== restaurantId) {
+          console.warn(`⚠️ Filtering out item ${row.id} - admin_id mismatch: ${rowAdminId} !== ${restaurantId}`);
+          return false;
+        }
+        
+        // Only include items with valid categories
+        const category = row.category?.trim();
+        if (!category || !validCategories.includes(category)) {
+          console.warn(`⚠️ Filtering out item ${row.id} - invalid category: ${category}`);
+          return false;
+        }
+        
+        return true;
+      })
+      .map(row => {
+        const category = row.category?.trim() || 'Mains';
+        return {
+          id: row.id.toString(),
+          name: row.name || 'Unnamed Item',
+          description: row.description || '',
+          price: parseFloat(row.price) || 0,
+          category: category, // Ensure it matches Category enum
+          image: row.image || `https://loremflickr.com/400/300/food,dish?random=${row.id}`,
+          isVegetarian: row.is_vegetarian || false,
+          isSpicy: row.is_spicy || false,
+          isOutOfStock: false, // Already filtered out, but include for consistency
+        };
+      });
+
+    console.log(`🔵 Returning ${menuItems.length} menu items for restaurant ${restaurantId}, table ${table}`);
+    console.log(`🔵 Restaurant name: ${adminResult.rows[0].restaurant_name}`);
+    
+    // Log first few items for debugging
+    if (menuItems.length > 0) {
+      console.log(`🔵 Sample menu items:`, menuItems.slice(0, 3).map(item => ({ id: item.id, name: item.name, category: item.category })));
+    } else {
+      console.warn(`⚠️ No menu items found for restaurant ${restaurantId}`);
+    }
 
     res.json({
       restaurant: {

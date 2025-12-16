@@ -1478,8 +1478,20 @@ app.get('/api/qr/menu', async (req, res) => {
       return res.status(404).json({ error: 'Restaurant not found' });
     }
 
+    // First, verify restaurant exists and get its ID
+    const restaurantIdFromDb = adminResult.rows[0].id;
+    console.log(`🔵 Restaurant ID from DB: ${restaurantIdFromDb} (type: ${typeof restaurantIdFromDb})`);
+    console.log(`🔵 Restaurant ID from query: ${restaurantId} (type: ${typeof restaurantId})`);
+    
+    // Ensure IDs match
+    if (parseInt(restaurantIdFromDb) !== restaurantId) {
+      console.error(`❌ Restaurant ID mismatch! DB: ${restaurantIdFromDb}, Query: ${restaurantId}`);
+      return res.status(400).json({ error: 'Restaurant ID mismatch' });
+    }
+
     // Get menu items - ensure we only get items for this specific restaurant
     // Use explicit integer comparison to ensure we only get items for this restaurant
+    // Also explicitly cast the parameter to integer
     const menuResult = await pool.query(
       `SELECT id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock, admin_id 
        FROM menu_items 
@@ -1495,9 +1507,35 @@ app.get('/api/qr/menu', async (req, res) => {
          name`,
       [restaurantId]
     );
+    
+    // Additional verification query to check all menu items for this restaurant
+    const allItemsCheck = await pool.query(
+      `SELECT id, name, admin_id FROM menu_items WHERE admin_id = $1::integer`,
+      [restaurantId]
+    );
+    console.log(`🔵 Total menu items (all) for restaurant ${restaurantId}: ${allItemsCheck.rows.length}`);
+    if (allItemsCheck.rows.length > 0) {
+      console.log(`🔵 Sample items:`, allItemsCheck.rows.slice(0, 3).map(r => ({ id: r.id, name: r.name, admin_id: r.admin_id })));
+    }
 
     console.log(`🔵 Query executed for restaurant ID: ${restaurantId} (type: ${typeof restaurantId})`);
     console.log(`🔵 Found ${menuResult.rows.length} menu items in database`);
+    
+    // Debug: Log all admin_ids found in the query result
+    if (menuResult.rows.length > 0) {
+      const adminIds = [...new Set(menuResult.rows.map(row => row.admin_id))];
+      console.log(`🔵 Admin IDs found in query results:`, adminIds);
+      console.log(`🔵 Expected admin ID: ${restaurantId}`);
+      
+      // Check if any items have wrong admin_id
+      const wrongAdminIdItems = menuResult.rows.filter(row => parseInt(row.admin_id) !== restaurantId);
+      if (wrongAdminIdItems.length > 0) {
+        console.error(`❌ ERROR: Found ${wrongAdminIdItems.length} items with wrong admin_id!`);
+        wrongAdminIdItems.forEach(item => {
+          console.error(`❌ Item ID: ${item.id}, Name: ${item.name}, admin_id: ${item.admin_id}, Expected: ${restaurantId}`);
+        });
+      }
+    }
     
     // Double-check: filter out any items that don't match the restaurant ID (safety check)
     const validCategories = ['Starters', 'Mains', 'Desserts', 'Drinks'];
@@ -1506,7 +1544,7 @@ app.get('/api/qr/menu', async (req, res) => {
         // CRITICAL: Ensure admin_id matches exactly
         const rowAdminId = parseInt(row.admin_id);
         if (rowAdminId !== restaurantId) {
-          console.warn(`⚠️ Filtering out item ${row.id} - admin_id mismatch: ${rowAdminId} !== ${restaurantId}`);
+          console.error(`❌ Filtering out item ${row.id} (${row.name}) - admin_id mismatch: ${rowAdminId} !== ${restaurantId}`);
           return false;
         }
         
@@ -1542,6 +1580,18 @@ app.get('/api/qr/menu', async (req, res) => {
       console.log(`🔵 Sample menu items:`, menuItems.slice(0, 3).map(item => ({ id: item.id, name: item.name, category: item.category })));
     } else {
       console.warn(`⚠️ No menu items found for restaurant ${restaurantId}`);
+      // Check if there are ANY menu items in the database for this restaurant
+      const allItemsCheck = await pool.query(
+        `SELECT COUNT(*) as count FROM menu_items WHERE admin_id = $1`,
+        [restaurantId]
+      );
+      console.log(`🔵 Total menu items (including out of stock) for restaurant ${restaurantId}: ${allItemsCheck.rows[0].count}`);
+    }
+
+    // Final verification before sending response
+    if (menuItems.length === 0) {
+      console.warn(`⚠️ WARNING: No menu items to return for restaurant ${restaurantId}`);
+      // Return empty menu instead of error - let frontend handle it
     }
 
     res.json({
@@ -1550,10 +1600,63 @@ app.get('/api/qr/menu', async (req, res) => {
         name: adminResult.rows[0].restaurant_name || 'Restaurant',
       },
       tableId: table,
-      menu: menuItems
+      menu: menuItems,
+      // Include debug info in development
+      _debug: process.env.NODE_ENV === 'development' ? {
+        restaurantId: restaurantId,
+        totalItemsInDb: menuResult.rows.length,
+        itemsReturned: menuItems.length
+      } : undefined
     });
   } catch (error) {
-    console.error('Error fetching QR menu:', error);
+    console.error('❌ Error fetching QR menu:', error);
+    console.error('❌ Error stack:', error.stack);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message || 'Unknown error occurred'
+    });
+  }
+});
+
+// Diagnostic endpoint to check menu items for a restaurant (for debugging)
+app.get('/api/qr/menu/debug/:restaurantId', async (req, res) => {
+  try {
+    const { restaurantId } = req.params;
+    const restaurantIdNum = parseInt(restaurantId);
+    
+    if (isNaN(restaurantIdNum)) {
+      return res.status(400).json({ error: 'Invalid restaurant ID' });
+    }
+
+    // Get all menu items for this restaurant (including out of stock)
+    const allItems = await pool.query(
+      `SELECT id, name, admin_id, is_out_of_stock, category 
+       FROM menu_items 
+       WHERE admin_id = $1::integer
+       ORDER BY id`,
+      [restaurantIdNum]
+    );
+
+    // Get restaurant info
+    const adminResult = await pool.query(
+      'SELECT id, restaurant_name FROM admin WHERE id = $1',
+      [restaurantIdNum]
+    );
+
+    res.json({
+      restaurant: adminResult.rows[0] || null,
+      restaurantId: restaurantIdNum,
+      totalMenuItems: allItems.rows.length,
+      items: allItems.rows.map(row => ({
+        id: row.id,
+        name: row.name,
+        admin_id: row.admin_id,
+        is_out_of_stock: row.is_out_of_stock,
+        category: row.category
+      }))
+    });
+  } catch (error) {
+    console.error('Error in debug endpoint:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

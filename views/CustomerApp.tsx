@@ -48,12 +48,24 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
       }
       const data = await response.json();
       console.log('Fetched menu from database:', data);
+      console.log('Restaurant ID requested:', restId);
+      console.log('Menu items received:', data.menu?.length || 0);
       setRestaurantName(data.restaurant?.name || null);
-      setMenuItems(data.menu || []);
+      
+      // Only set menu items if we got valid data
+      if (data.menu && Array.isArray(data.menu)) {
+        setMenuItems(data.menu);
+        console.log('✅ Menu items set successfully:', data.menu.length);
+      } else {
+        console.error('❌ Invalid menu data received:', data);
+        setMenuItems([]);
+        alert('No menu items available for this restaurant.');
+      }
     } catch (error) {
       console.error('Error fetching menu from database:', error);
-      // Fallback to mock menu if API fails
-      setMenuItems(MockAPI.getMenu());
+      // Don't fallback to mock menu - show empty menu instead
+      setMenuItems([]);
+      alert('Failed to load menu. Please try again.');
     } finally {
       setMenuLoading(false);
     }

@@ -9,11 +9,12 @@ import {
   Calendar, Menu as MenuIcon, Search, Mail, UserPlus, ArrowUpRight,
   Activity, Clock, Award, Bell, MoreVertical, Edit2, Trash2, Eye,
   Zap, Target, PieChart, ArrowDownRight, Filter, Download, RefreshCw,
-  QrCode, Download as DownloadIcon, X, TrendingDown, CreditCard, CheckCircle2, XCircle
+  QrCode, Download as DownloadIcon, X, TrendingDown, CreditCard, CheckCircle2, XCircle,
+  Sun, Moon
 } from 'lucide-react';
 
 // --- Revenue Line Chart Component ---
-const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: number }[], maxVal: number }) => {
+const RevenueLineChart = ({ data, maxVal, darkMode = false }: { data: { label: string; value: number }[], maxVal: number, darkMode?: boolean }) => {
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const chartHeight = 280;
   const chartWidth = 800;
@@ -105,9 +106,9 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
         onMouseLeave={() => setHoveredIndex(null)}
       >
         <defs>
-          <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
-            <stop offset="100%" stopColor="#10b981" stopOpacity="0.05" />
+          <linearGradient id={`areaGradient-${darkMode ? 'dark' : 'light'}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={darkMode ? "#a855f7" : "#10b981"} stopOpacity="0.3" />
+            <stop offset="100%" stopColor={darkMode ? "#a855f7" : "#10b981"} stopOpacity="0.05" />
           </linearGradient>
           <filter id="glow">
             <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
@@ -126,7 +127,7 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
               y1={label.y}
               x2={chartWidth - padding.right}
               y2={label.y}
-              stroke="#e2e8f0"
+              stroke={darkMode ? "#475569" : "#e2e8f0"}
               strokeWidth="1"
               strokeDasharray="3 3"
             />
@@ -136,14 +137,14 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
         {/* Area fill */}
         <path
           d={areaPath}
-          fill="url(#areaGradient)"
+          fill={`url(#areaGradient-${darkMode ? 'dark' : 'light'})`}
         />
 
         {/* Line */}
         <path
           d={linePath}
           fill="none"
-          stroke="#10b981"
+          stroke={darkMode ? "#a855f7" : "#10b981"}
           strokeWidth="3"
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -157,8 +158,8 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
               cx={point.x}
               cy={point.y}
               r={hoveredIndex === i ? 7 : 5}
-              fill={hoveredIndex === i ? "#10b981" : "#ffffff"}
-              stroke={hoveredIndex === i ? "#10b981" : "#10b981"}
+              fill={hoveredIndex === i ? (darkMode ? "#a855f7" : "#10b981") : (darkMode ? "#a855f7" : "#ffffff")}
+              stroke={hoveredIndex === i ? (darkMode ? "#a855f7" : "#10b981") : (darkMode ? "#a855f7" : "#10b981")}
               strokeWidth={hoveredIndex === i ? 3 : 2}
               className="transition-all cursor-pointer"
               onMouseEnter={() => setHoveredIndex(i)}
@@ -174,7 +175,7 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
                   width="90"
                   height="32"
                   rx="8"
-                  fill="#1e293b"
+                  fill={darkMode ? "#1e293b" : "#1e293b"}
                   opacity="0.95"
                 />
                 <text
@@ -189,7 +190,7 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
                 </text>
                 <polygon
                   points={`${point.x - 8},${point.y - 18} ${point.x + 8},${point.y - 18} ${point.x},${point.y - 12}`}
-                  fill="#1e293b"
+                  fill={darkMode ? "#1e293b" : "#1e293b"}
                   opacity="0.95"
                 />
               </g>
@@ -204,7 +205,7 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
             x={padding.left - 12}
             y={label.y + 4}
             textAnchor="end"
-            fill="#64748b"
+            fill={darkMode ? "#94a3b8" : "#64748b"}
             fontSize="11"
             fontWeight="600"
           >
@@ -219,7 +220,7 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
             x={point.x}
             y={chartHeight - padding.bottom + 22}
             textAnchor="middle"
-            fill={hoveredIndex === i ? "#10b981" : "#64748b"}
+            fill={hoveredIndex === i ? (darkMode ? "#a855f7" : "#10b981") : (darkMode ? "#94a3b8" : "#64748b")}
             fontSize="11"
             fontWeight={hoveredIndex === i ? "700" : "600"}
             className="transition-all"
@@ -232,8 +233,51 @@ const RevenueLineChart = ({ data, maxVal }: { data: { label: string; value: numb
   );
 };
 
+// --- Theme Toggle Component ---
+const ThemeToggle = ({ isDark, onToggle }: { isDark: boolean, onToggle: () => void }) => {
+  return (
+    <button
+      onClick={onToggle}
+      className={`relative w-14 h-7 rounded-full transition-all duration-500 ease-in-out ${
+        isDark 
+          ? 'bg-gradient-to-r from-purple-600 to-blue-600' 
+          : 'bg-gradient-to-r from-amber-400 to-orange-500'
+      } shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95`}
+      aria-label="Toggle theme"
+    >
+      {/* Toggle Circle */}
+      <div
+        className={`absolute top-0.5 left-0.5 w-6 h-6 bg-white rounded-full shadow-lg transform transition-all duration-500 ease-in-out flex items-center justify-center ${
+          isDark ? 'translate-x-7' : 'translate-x-0'
+        }`}
+      >
+        {isDark ? (
+          <Moon className="w-3.5 h-3.5 text-purple-600 transition-all duration-300" />
+        ) : (
+          <Sun className="w-3.5 h-3.5 text-amber-500 transition-all duration-300" />
+        )}
+      </div>
+      
+      {/* Background Stars/Moon (for dark mode) */}
+      {isDark && (
+        <div className="absolute inset-0 flex items-center justify-between px-2 opacity-60">
+          <div className="w-1 h-1 bg-white rounded-full"></div>
+          <div className="w-0.5 h-0.5 bg-white rounded-full"></div>
+        </div>
+      )}
+      
+      {/* Sun Rays (for light mode) */}
+      {!isDark && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="absolute w-8 h-8 border-2 border-white/30 rounded-full"></div>
+        </div>
+      )}
+    </button>
+  );
+};
+
 // --- Sub-Component: Sidebar ---
-const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName, isOpen, setIsOpen }: { activePage: string, setPage: (p: string) => void, onLogout: () => void, restaurantName?: string, userName?: string, isOpen: boolean, setIsOpen: (open: boolean) => void }) => {
+const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName, isOpen, setIsOpen, isDark, onThemeToggle }: { activePage: string, setPage: (p: string) => void, onLogout: () => void, restaurantName?: string, userName?: string, isOpen: boolean, setIsOpen: (open: boolean) => void, isDark: boolean, onThemeToggle: () => void }) => {
   const links = [
     { id: 'overview', label: 'Dashboard', icon: LayoutDashboard, color: 'emerald' },
     { id: 'analytics', label: 'Analytics', icon: BarChart3, color: 'blue' },
@@ -249,37 +293,71 @@ const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName, isOp
       {/* Mobile Overlay */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          className={`fixed inset-0 z-30 lg:hidden transition-opacity duration-500 ${
+            isDark ? 'bg-black/70' : 'bg-black/50'
+          }`}
           onClick={() => setIsOpen(false)}
         />
       )}
-      <div className={`w-80 bg-white border-r border-slate-200/60 flex flex-col h-screen fixed left-0 top-0 z-40 shadow-sm backdrop-blur-xl transition-transform duration-300 lg:translate-x-0 ${
+      <div className={`w-80 backdrop-blur-xl border-r flex flex-col h-screen fixed left-0 top-0 z-40 shadow-2xl transition-all duration-500 lg:translate-x-0 ${
         isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+      } ${
+        isDark 
+          ? 'bg-slate-900/95 border-slate-800/50' 
+          : 'bg-white/95 border-slate-200/50'
       }`}>
       {/* Logo Section */}
-      <div className="p-4 sm:p-8 border-b border-slate-100">
+      <div className={`p-4 sm:p-8 border-b transition-colors duration-500 ${
+        isDark ? 'border-slate-800/50' : 'border-slate-200/50'
+      }`}>
         <div className="flex items-center gap-3 sm:gap-4">
           <div className="relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-emerald-400 via-teal-400 to-emerald-500 rounded-2xl blur-lg opacity-50"></div>
-            <div className="relative bg-gradient-to-br from-emerald-500 to-teal-600 p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl shadow-lg">
+            <div className={`absolute inset-0 rounded-2xl blur-lg opacity-60 transition-all duration-500 ${
+              isDark 
+                ? 'bg-gradient-to-br from-purple-500 via-blue-500 to-purple-600' 
+                : 'bg-gradient-to-br from-emerald-400 via-teal-400 to-emerald-500'
+            }`}></div>
+            <div className={`relative p-2.5 sm:p-3.5 rounded-xl sm:rounded-2xl shadow-lg transition-all duration-500 ${
+              isDark 
+                ? 'bg-gradient-to-br from-purple-500 to-blue-600' 
+                : 'bg-gradient-to-br from-emerald-500 to-teal-600'
+            }`}>
               <ChefHat className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
             </div>
           </div>
           <div className="flex-1 min-w-0">
-            <h1 className="text-lg sm:text-2xl font-bold text-slate-900 tracking-tight truncate">
+            <h1 className={`text-lg sm:text-2xl font-bold tracking-tight truncate transition-colors duration-500 ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
               {restaurantName || 'Restaurant Name'}
             </h1>
-            <p className="text-xs text-slate-500 font-medium mt-0.5 truncate">
+            <p className={`text-xs font-medium mt-0.5 truncate transition-colors duration-500 ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}>
               {userName || 'Admin'}
             </p>
           </div>
           {/* Mobile Close Button */}
           <button
             onClick={() => setIsOpen(false)}
-            className="lg:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+            className={`lg:hidden p-2 rounded-lg transition-colors duration-500 ${
+              isDark 
+                ? 'text-slate-400 hover:text-white hover:bg-slate-800' 
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+            }`}
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+        
+        {/* Theme Toggle */}
+        <div className="mt-4 flex items-center justify-between">
+          <span className={`text-xs font-medium transition-colors duration-500 ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>
+            Theme
+          </span>
+          <ThemeToggle isDark={isDark} onToggle={onThemeToggle} />
         </div>
       </div>
 
@@ -294,19 +372,37 @@ const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName, isOp
                 setPage(link.id);
                 setIsOpen(false); // Close mobile menu on navigation
               }}
-              className={`w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl transition-all duration-200 group relative touch-manipulation ${
+              className={`w-full flex items-center gap-3 sm:gap-4 px-4 sm:px-5 py-3 sm:py-3.5 rounded-xl transition-all duration-300 group relative touch-manipulation ${
                 isActive 
-                  ? 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 shadow-sm' 
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100'
+                  ? isDark
+                    ? 'bg-slate-800/80 text-white shadow-lg' 
+                    : 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 shadow-sm'
+                  : isDark
+                    ? 'text-slate-400 hover:bg-slate-800/50 hover:text-white active:bg-slate-800'
+                    : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 active:bg-slate-100'
               }`}
             >
               {isActive && (
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-r-full"></div>
+                <div className={`absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 rounded-r-full transition-all duration-500 ${
+                  isDark 
+                    ? 'bg-gradient-to-b from-purple-500 to-blue-500' 
+                    : 'bg-gradient-to-b from-emerald-500 to-teal-500'
+                }`}></div>
               )}
-              <link.icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-emerald-600' : 'text-slate-400 group-hover:text-slate-600'} transition-colors`} />
-              <span className={`font-semibold text-sm ${isActive ? 'text-emerald-700' : 'text-slate-700'}`}>{link.label}</span>
+              <link.icon className={`w-5 h-5 flex-shrink-0 transition-colors duration-300 ${
+                isActive 
+                  ? isDark ? 'text-white' : 'text-emerald-600'
+                  : isDark ? 'text-slate-500 group-hover:text-slate-300' : 'text-slate-400 group-hover:text-slate-600'
+              }`} />
+              <span className={`font-semibold text-sm transition-colors duration-300 ${
+                isActive 
+                  ? isDark ? 'text-white' : 'text-emerald-700'
+                  : isDark ? 'text-slate-400 group-hover:text-white' : 'text-slate-700 group-hover:text-slate-900'
+              }`}>{link.label}</span>
               {isActive && (
-                <div className="ml-auto w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                <div className={`ml-auto w-1.5 h-1.5 rounded-full transition-colors duration-500 ${
+                  isDark ? 'bg-purple-500' : 'bg-emerald-500'
+                }`}></div>
               )}
             </button>
           );
@@ -314,10 +410,12 @@ const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName, isOp
       </nav>
 
       {/* Logout Button */}
-      <div className="p-4 sm:p-6 border-t border-slate-100">
+      <div className={`p-4 sm:p-6 border-t transition-colors duration-500 ${
+        isDark ? 'border-slate-800/50' : 'border-slate-200/50'
+      }`}>
         <button
           onClick={onLogout}
-          className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl transition-all duration-200 bg-gradient-to-r from-rose-500 to-rose-600 hover:from-rose-600 hover:to-rose-700 text-white font-semibold text-sm shadow-lg shadow-rose-500/20 hover:shadow-xl hover:shadow-rose-500/30 touch-manipulation active:scale-95"
+          className="w-full flex items-center justify-center gap-3 px-5 py-3.5 rounded-xl transition-all duration-300 bg-gradient-to-r from-rose-600 to-rose-700 hover:from-rose-700 hover:to-rose-800 text-white font-semibold text-sm shadow-lg shadow-rose-500/30 hover:shadow-xl hover:shadow-rose-500/40 touch-manipulation active:scale-95"
         >
           <LogOut className="w-5 h-5" />
           <span>Logout</span>
@@ -329,7 +427,7 @@ const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName, isOp
 };
 
 // --- Sub-View: Overview & Analytics ---
-const AnalyticsView = ({ restaurantName, adminId }: { restaurantName?: string, adminId: string }) => {
+const AnalyticsView = ({ restaurantName, adminId, isDark }: { restaurantName?: string, adminId: string, isDark: boolean }) => {
   const [range, setRange] = useState<TimeRange>('Week');
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -381,32 +479,56 @@ const AnalyticsView = ({ restaurantName, adminId }: { restaurantName?: string, a
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Business Overview</h1>
+          <h1 className={`text-3xl font-bold mb-1 tracking-tight transition-colors duration-500 ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}>Business Overview</h1>
           {restaurantName ? (
-            <p className="text-sm text-slate-600">Monitor <span className="font-semibold text-emerald-600">{restaurantName}</span>'s key performance metrics</p>
+            <p className={`text-sm transition-colors duration-500 ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}>
+              Monitor <span className={`font-semibold transition-colors duration-500 ${
+                isDark ? 'text-purple-400' : 'text-emerald-600'
+              }`}>{restaurantName}</span>'s key performance metrics
+            </p>
           ) : (
-            <p className="text-sm text-slate-600">Monitor your restaurant's key performance metrics</p>
+            <p className={`text-sm transition-colors duration-500 ${
+              isDark ? 'text-slate-400' : 'text-slate-600'
+            }`}>Monitor your restaurant's key performance metrics</p>
           )}
         </div>
         
         <div className="flex items-center gap-2">
-          <div className="flex bg-white p-1 rounded-lg border border-slate-200 shadow-sm">
+          <div className={`flex backdrop-blur-sm p-1 rounded-lg border shadow-lg transition-all duration-500 ${
+            isDark 
+              ? 'bg-slate-800/50 border-slate-700/50' 
+              : 'bg-white border-slate-200'
+          }`}>
             {['Today', 'Week', 'Month', 'Year'].map((r) => (
               <button
                 key={r}
                 onClick={() => setRange(r as TimeRange)}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-300 ${
                   range === r 
-                    ? 'bg-slate-900 text-white shadow-sm' 
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                    ? isDark
+                      ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg' 
+                      : 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-lg'
+                    : isDark
+                      ? 'text-slate-400 hover:text-white hover:bg-slate-700/50'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
                 }`}
               >
                 {r}
               </button>
             ))}
           </div>
-          <button className="p-2 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
-            <Download className="w-4 h-4 text-slate-600" />
+          <button className={`p-2 backdrop-blur-sm border rounded-lg transition-all duration-500 shadow-lg ${
+            isDark 
+              ? 'bg-slate-800/50 border-slate-700/50 hover:bg-slate-700/50' 
+              : 'bg-white border-slate-200 hover:bg-slate-50'
+          }`}>
+            <Download className={`w-4 h-4 transition-colors duration-500 ${
+              isDark ? 'text-slate-300' : 'text-slate-600'
+            }`} />
           </button>
         </div>
       </div>
@@ -419,22 +541,38 @@ const AnalyticsView = ({ restaurantName, adminId }: { restaurantName?: string, a
         <>
           {/* Key Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+            <div className={`backdrop-blur-sm rounded-xl p-5 border shadow-xl hover:shadow-2xl transition-all duration-500 group ${
+              isDark 
+                ? 'bg-slate-800/60 border-slate-700/50 hover:border-slate-600/50' 
+                : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xl'
+            }`}>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-md shadow-emerald-500/20">
+                <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-lg shadow-emerald-500/30">
                   <IndianRupee className="w-5 h-5 text-white" />
                 </div>
                 {data.revenueChange !== undefined && (
-                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md ${
-                    data.revenueChange >= 0 ? 'bg-emerald-50' : 'bg-rose-50'
+                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-colors duration-500 ${
+                    data.revenueChange >= 0 
+                      ? isDark 
+                        ? 'bg-emerald-500/20 border border-emerald-500/30' 
+                        : 'bg-emerald-50 border border-emerald-200'
+                      : isDark
+                        ? 'bg-rose-500/20 border border-rose-500/30'
+                        : 'bg-rose-50 border border-rose-200'
                   }`}>
                     {data.revenueChange >= 0 ? (
-                      <TrendingUp className="w-3 h-3 text-emerald-600" />
+                      <TrendingUp className={`w-3 h-3 transition-colors duration-500 ${
+                        isDark ? 'text-emerald-400' : 'text-emerald-600'
+                      }`} />
                     ) : (
-                      <TrendingDown className="w-3 h-3 text-rose-600" />
+                      <TrendingDown className={`w-3 h-3 transition-colors duration-500 ${
+                        isDark ? 'text-rose-400' : 'text-rose-600'
+                      }`} />
                     )}
-                    <span className={`text-xs font-bold ${
-                      data.revenueChange >= 0 ? 'text-emerald-700' : 'text-rose-700'
+                    <span className={`text-xs font-bold transition-colors duration-500 ${
+                      data.revenueChange >= 0 
+                        ? isDark ? 'text-emerald-400' : 'text-emerald-700'
+                        : isDark ? 'text-rose-400' : 'text-rose-700'
                     }`}>
                       {data.revenueChange >= 0 ? '+' : ''}{data.revenueChange.toFixed(1)}%
                     </span>
@@ -442,28 +580,50 @@ const AnalyticsView = ({ restaurantName, adminId }: { restaurantName?: string, a
                 )}
               </div>
               <div className="mb-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Total Revenue</p>
-                <h3 className="text-2xl font-bold text-slate-900">₹{data.totalRevenue.toLocaleString()}</h3>
+                <p className={`text-xs font-semibold uppercase tracking-wide mb-1 transition-colors duration-500 ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}>Total Revenue</p>
+                <h3 className={`text-2xl font-bold transition-colors duration-500 ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>₹{data.totalRevenue.toLocaleString()}</h3>
               </div>
-              <p className="text-xs text-slate-500">Compared to last {range.toLowerCase()}</p>
+              <p className={`text-xs transition-colors duration-500 ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}>Compared to last {range.toLowerCase()}</p>
             </div>
 
-            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+            <div className={`backdrop-blur-sm rounded-xl p-5 border shadow-xl hover:shadow-2xl transition-all duration-500 group ${
+              isDark 
+                ? 'bg-slate-800/60 border-slate-700/50 hover:border-slate-600/50' 
+                : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xl'
+            }`}>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md shadow-blue-500/20">
+                <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-lg shadow-blue-500/30">
                   <ShoppingBag className="w-5 h-5 text-white" />
                 </div>
                 {data.ordersChange !== undefined && (
-                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md ${
-                    data.ordersChange >= 0 ? 'bg-blue-50' : 'bg-rose-50'
+                  <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-colors duration-500 ${
+                    data.ordersChange >= 0 
+                      ? isDark 
+                        ? 'bg-blue-500/20 border border-blue-500/30' 
+                        : 'bg-blue-50 border border-blue-200'
+                      : isDark
+                        ? 'bg-rose-500/20 border border-rose-500/30'
+                        : 'bg-rose-50 border border-rose-200'
                   }`}>
                     {data.ordersChange >= 0 ? (
-                      <TrendingUp className="w-3 h-3 text-blue-600" />
+                      <TrendingUp className={`w-3 h-3 transition-colors duration-500 ${
+                        isDark ? 'text-blue-400' : 'text-blue-600'
+                      }`} />
                     ) : (
-                      <TrendingDown className="w-3 h-3 text-rose-600" />
+                      <TrendingDown className={`w-3 h-3 transition-colors duration-500 ${
+                        isDark ? 'text-rose-400' : 'text-rose-600'
+                      }`} />
                     )}
-                    <span className={`text-xs font-bold ${
-                      data.ordersChange >= 0 ? 'text-blue-700' : 'text-rose-700'
+                    <span className={`text-xs font-bold transition-colors duration-500 ${
+                      data.ordersChange >= 0 
+                        ? isDark ? 'text-blue-400' : 'text-blue-700'
+                        : isDark ? 'text-rose-400' : 'text-rose-700'
                     }`}>
                       {data.ordersChange >= 0 ? '+' : ''}{data.ordersChange.toFixed(1)}%
                     </span>
@@ -471,45 +631,85 @@ const AnalyticsView = ({ restaurantName, adminId }: { restaurantName?: string, a
                 )}
               </div>
               <div className="mb-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Total Orders</p>
-                <h3 className="text-2xl font-bold text-slate-900">{data.totalOrders.toLocaleString()}</h3>
+                <p className={`text-xs font-semibold uppercase tracking-wide mb-1 transition-colors duration-500 ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}>Total Orders</p>
+                <h3 className={`text-2xl font-bold transition-colors duration-500 ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>{data.totalOrders.toLocaleString()}</h3>
               </div>
-              <p className="text-xs text-slate-500">Orders processed</p>
+              <p className={`text-xs transition-colors duration-500 ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}>Orders processed</p>
             </div>
 
-            <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm hover:shadow-md transition-shadow group">
+            <div className={`backdrop-blur-sm rounded-xl p-5 border shadow-xl hover:shadow-2xl transition-all duration-500 group ${
+              isDark 
+                ? 'bg-slate-800/60 border-slate-700/50 hover:border-slate-600/50' 
+                : 'bg-white border-slate-200 hover:border-slate-300 hover:shadow-2xl'
+            }`}>
               <div className="flex items-center justify-between mb-4">
-                <div className="p-2.5 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg shadow-md shadow-amber-500/20">
+                <div className="p-2.5 bg-gradient-to-br from-amber-500 to-amber-600 rounded-lg shadow-lg shadow-amber-500/30">
                   <Star className="w-5 h-5 text-white fill-white" />
                 </div>
-                <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-50 rounded-md">
-                  <Award className="w-3 h-3 text-amber-600" />
+                <div className={`flex items-center gap-1 px-2.5 py-1 rounded-md transition-colors duration-500 ${
+                  isDark 
+                    ? 'bg-amber-500/20 border border-amber-500/30' 
+                    : 'bg-amber-50 border border-amber-200'
+                }`}>
+                  <Award className={`w-3 h-3 transition-colors duration-500 ${
+                    isDark ? 'text-amber-400' : 'text-amber-600'
+                  }`} />
                 </div>
               </div>
               <div className="mb-1">
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">Average Rating</p>
-                <h3 className="text-2xl font-bold text-slate-900">{data.averageRating.toFixed(1)}</h3>
+                <p className={`text-xs font-semibold uppercase tracking-wide mb-1 transition-colors duration-500 ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}>Average Rating</p>
+                <h3 className={`text-2xl font-bold transition-colors duration-500 ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>{data.averageRating.toFixed(1)}</h3>
               </div>
-              <p className="text-xs text-slate-500">Customer satisfaction</p>
+              <p className={`text-xs transition-colors duration-500 ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}>Customer satisfaction</p>
             </div>
           </div>
 
           {/* Revenue Chart */}
-          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+          <div className={`backdrop-blur-sm rounded-xl p-6 border shadow-xl transition-all duration-500 ${
+            isDark 
+              ? 'bg-slate-800/60 border-slate-700/50' 
+              : 'bg-white border-slate-200'
+          }`}>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 mb-0.5">Revenue Trend</h3>
-                <p className="text-xs text-slate-500">Performance over selected period</p>
+                <h3 className={`text-lg font-bold mb-0.5 transition-colors duration-500 ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>Revenue Trend</h3>
+                <p className={`text-xs transition-colors duration-500 ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}>Performance over selected period</p>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-50 rounded-lg">
-                <Activity className="w-3.5 h-3.5 text-emerald-600" />
-                <span className="text-xs font-semibold text-slate-700">Live Data</span>
+              <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all duration-500 ${
+                isDark 
+                  ? 'bg-slate-700/50 border-slate-600/50' 
+                  : 'bg-slate-50 border-slate-200'
+              }`}>
+                <Activity className={`w-3.5 h-3.5 transition-colors duration-500 ${
+                  isDark ? 'text-emerald-400' : 'text-emerald-600'
+                }`} />
+                <span className={`text-xs font-semibold transition-colors duration-500 ${
+                  isDark ? 'text-slate-300' : 'text-slate-700'
+                }`}>Live Data</span>
               </div>
             </div>
             {data && data.revenueTrend && data.revenueTrend.length > 0 ? (
-              <RevenueLineChart data={data.revenueTrend} maxVal={maxVal} />
+              <RevenueLineChart data={data.revenueTrend} maxVal={maxVal} darkMode={isDark} />
             ) : (
-              <div className="w-full h-72 flex items-center justify-center text-slate-400">
+              <div className={`w-full h-72 flex items-center justify-center transition-colors duration-500 ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`}>
                 <div className="text-center">
                   <p className="text-sm">No revenue data available</p>
                 </div>
@@ -523,7 +723,7 @@ const AnalyticsView = ({ restaurantName, adminId }: { restaurantName?: string, a
 };
 
 // --- Sub-View: Menu Management ---
-const MenuManagementView = ({ adminId }: { adminId: string }) => {
+const MenuManagementView = ({ adminId, isDark }: { adminId: string, isDark: boolean }) => {
   const [items, setItems] = useState<MenuItem[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
@@ -650,8 +850,12 @@ const MenuManagementView = ({ adminId }: { adminId: string }) => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Menu Management</h1>
-          <p className="text-sm text-slate-600">Manage your restaurant's menu items</p>
+          <h1 className={`text-3xl font-bold mb-1 tracking-tight transition-colors duration-500 ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}>Menu Management</h1>
+          <p className={`text-sm transition-colors duration-500 ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>Manage your restaurant's menu items</p>
         </div>
         <Button 
           onClick={() => {
@@ -671,7 +875,9 @@ const MenuManagementView = ({ adminId }: { adminId: string }) => {
        {/* Add Item Form */}
        {isAdding && (
           <div className="animate-slide-up">
-            <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+            <div className={`rounded-xl p-6 border shadow-sm transition-all duration-500 ${
+              isDark ? 'bg-slate-800/60 border-slate-700/50' : 'bg-white border-slate-200'
+            }`}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-1 h-6 bg-gradient-to-b from-emerald-500 to-teal-500 rounded-full"></div>
                 <h2 className="text-xl font-bold text-slate-900">
@@ -680,58 +886,94 @@ const MenuManagementView = ({ adminId }: { adminId: string }) => {
               </div>
               <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Item Name</label>
+                  <label className={`block text-sm font-semibold mb-2 transition-colors duration-500 ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}>Item Name</label>
                   <input 
                     required value={name} onChange={e => setName(e.target.value)}
-                    className="w-full border border-slate-300 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900" 
+                    className={`w-full border rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                      isDark 
+                        ? 'bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400' 
+                        : 'border-slate-300 text-slate-900'
+                    }`} 
                     placeholder="e.g. Lobster Thermidor"
                   />
                 </div>
                 <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Description</label>
+                  <label className={`block text-sm font-semibold mb-2 transition-colors duration-500 ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}>Description</label>
                   <textarea 
                     required value={desc} onChange={e => setDesc(e.target.value)}
-                    className="w-full border border-slate-300 rounded-xl p-3.5 h-28 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none font-medium text-slate-900" 
+                    className={`w-full border rounded-xl p-3.5 h-28 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all resize-none font-medium ${
+                      isDark 
+                        ? 'bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400' 
+                        : 'border-slate-300 text-slate-900'
+                    }`} 
                     placeholder="Ingredients and details..."
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Price</label>
+                  <label className={`block text-sm font-semibold mb-2 transition-colors duration-500 ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}>Price</label>
                   <div className="relative">
                     <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input 
                       type="number" step="0.01" required value={price} onChange={e => setPrice(e.target.value)}
-                      className="w-full border border-slate-300 rounded-xl pl-12 p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900" 
+                      className={`w-full border rounded-xl pl-12 p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                        isDark 
+                          ? 'bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400' 
+                          : 'border-slate-300 text-slate-900'
+                      }`} 
                       placeholder="25.00"
                     />
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Category</label>
+                  <label className={`block text-sm font-semibold mb-2 transition-colors duration-500 ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}>Category</label>
                   <select 
                     value={category} onChange={e => setCategory(e.target.value as Category)}
-                    className="w-full border border-slate-300 rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all bg-white font-medium text-slate-900"
+                    className={`w-full border rounded-xl p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                      isDark 
+                        ? 'bg-slate-700/50 border-slate-600 text-white' 
+                        : 'bg-white border-slate-300 text-slate-900'
+                    }`}
                   >
                     {Object.values(Category).map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div className="col-span-1 md:col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Image URL (Optional)</label>
+                  <label className={`block text-sm font-semibold mb-2 transition-colors duration-500 ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}>Image URL (Optional)</label>
                   <div className="relative">
                     <ImageIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                     <input 
                       value={image} onChange={e => setImage(e.target.value)}
-                      className="w-full border border-slate-300 rounded-xl pl-12 p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900" 
+                      className={`w-full border rounded-xl pl-12 p-3.5 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium ${
+                        isDark 
+                          ? 'bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400' 
+                          : 'border-slate-300 text-slate-900'
+                      }`} 
                       placeholder="https://..."
                     />
                   </div>
                 </div>
-                <div className="col-span-1 md:col-span-2 flex gap-3 mt-3 border-t border-slate-200 pt-4">
+                <div className={`col-span-1 md:col-span-2 flex gap-3 mt-3 border-t pt-4 transition-colors duration-500 ${
+                  isDark ? 'border-slate-700' : 'border-slate-200'
+                }`}>
                   <Button type="submit" disabled={loading} className="px-6 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white border-0 shadow-lg">
                     {loading ? <LoadingSpinner /> : editingItem ? 'Update Item' : 'Save Item'}
                   </Button>
                   {editingItem && (
-                    <Button type="button" onClick={resetForm} className="px-6 bg-slate-200 hover:bg-slate-300 text-slate-700 border-0">
+                    <Button type="button" onClick={resetForm} className={`px-6 border-0 transition-all duration-500 ${
+                      isDark 
+                        ? 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-300' 
+                        : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                    }`}>
                       Cancel
                     </Button>
                   )}
@@ -749,28 +991,46 @@ const MenuManagementView = ({ adminId }: { adminId: string }) => {
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           placeholder="Search menu items..."
-          className="w-full pl-12 pr-4 py-3.5 border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium text-slate-900 bg-white shadow-sm"
+          className={`w-full pl-12 pr-4 py-3.5 border rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-all font-medium shadow-sm ${
+            isDark 
+              ? 'bg-slate-700/50 border-slate-600 text-white placeholder:text-slate-400' 
+              : 'bg-white border-slate-300 text-slate-900'
+          }`}
         />
       </div>
 
       {/* Display items by category */}
       {Object.keys(itemsByCategory).length === 0 ? (
         <div className="text-center py-12">
-          <p className="text-slate-500">No menu items found. Add your first item to get started!</p>
+          <p className={`transition-colors duration-500 ${
+            isDark ? 'text-slate-400' : 'text-slate-500'
+          }`}>No menu items found. Add your first item to get started!</p>
         </div>
       ) : (
         Object.entries(itemsByCategory).map(([categoryName, categoryItems]) => (
           <div key={categoryName} className="space-y-4">
-            <h2 className="text-xl font-bold text-slate-900 border-b border-slate-200 pb-2">
+            <h2 className={`text-xl font-bold border-b pb-2 transition-colors duration-500 ${
+              isDark ? 'text-white border-slate-700' : 'text-slate-900 border-slate-200'
+            }`}>
               {categoryName}
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {categoryItems.map((item, index) => (
                 <FadeIn key={item.id} delay={index * 50}>
-                  <div className={`bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden group h-full flex flex-col ${
-                    item.isOutOfStock ? 'border-rose-200 opacity-75' : 'border-slate-200'
+                  <div className={`rounded-2xl border shadow-sm hover:shadow-md transition-all duration-500 overflow-hidden group h-full flex flex-col ${
+                    isDark 
+                      ? 'bg-slate-800/60 border-slate-700/50 hover:border-slate-600/50' 
+                      : 'bg-white border-slate-200'
+                  } ${
+                    item.isOutOfStock 
+                      ? isDark 
+                        ? 'border-rose-500/50 opacity-75' 
+                        : 'border-rose-200 opacity-75'
+                      : ''
                   }`}>
-                    <div className="relative h-48 overflow-hidden bg-slate-100">
+                    <div className={`relative h-48 overflow-hidden transition-colors duration-500 ${
+                      isDark ? 'bg-slate-700/50' : 'bg-slate-100'
+                    }`}>
                       <img src={item.image} alt={item.name} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                       {item.isOutOfStock && (
@@ -778,21 +1038,35 @@ const MenuManagementView = ({ adminId }: { adminId: string }) => {
                           <span className="bg-rose-500 text-white px-4 py-2 rounded-lg font-bold text-sm">OUT OF STOCK</span>
                         </div>
                       )}
-                      <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide shadow-lg">
+                      <div className={`absolute top-4 right-4 backdrop-blur-sm px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide shadow-lg transition-all duration-500 ${
+                        isDark 
+                          ? 'bg-slate-800/95 text-white' 
+                          : 'bg-white/95'
+                      }`}>
                         {item.category}
                       </div>
                       <div className="absolute bottom-4 left-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
                         <div className="flex gap-2">
                           <button 
                             onClick={() => handleEdit(item)}
-                            className="p-2 bg-white/95 backdrop-blur-sm rounded-lg hover:bg-white transition-colors shadow-lg"
+                            className={`p-2 backdrop-blur-sm rounded-lg transition-colors shadow-lg ${
+                              isDark 
+                                ? 'bg-slate-800/95 hover:bg-slate-700/95' 
+                                : 'bg-white/95 hover:bg-white'
+                            }`}
                             title="Edit item"
                           >
-                            <Edit2 className="w-4 h-4 text-slate-700" />
+                            <Edit2 className={`w-4 h-4 transition-colors duration-500 ${
+                              isDark ? 'text-slate-300' : 'text-slate-700'
+                            }`} />
                           </button>
                           <button 
                             onClick={() => handleDelete(item.id)}
-                            className="p-2 bg-white/95 backdrop-blur-sm rounded-lg hover:bg-white transition-colors shadow-lg"
+                            className={`p-2 backdrop-blur-sm rounded-lg transition-colors shadow-lg ${
+                              isDark 
+                                ? 'bg-slate-800/95 hover:bg-slate-700/95' 
+                                : 'bg-white/95 hover:bg-white'
+                            }`}
                             title="Delete item"
                           >
                             <Trash2 className="w-4 h-4 text-rose-600" />
@@ -800,19 +1074,31 @@ const MenuManagementView = ({ adminId }: { adminId: string }) => {
                         </div>
                       </div>
                     </div>
-                    <div className="p-5 flex-1 flex flex-col bg-white">
+                    <div className={`p-5 flex-1 flex flex-col transition-colors duration-500 ${
+                      isDark ? 'bg-slate-800/60' : 'bg-white'
+                    }`}>
                       <div className="flex justify-between items-start mb-2">
-                        <h3 className="font-bold text-slate-900 leading-tight text-lg">{item.name}</h3>
+                        <h3 className={`font-bold leading-tight text-lg transition-colors duration-500 ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}>{item.name}</h3>
                         <span className="text-emerald-600 font-bold text-lg">₹{item.price.toFixed(2)}</span>
                       </div>
-                      <p className="text-sm text-slate-600 line-clamp-2 mb-4 leading-relaxed">{item.description}</p>
-                      <div className="mt-auto pt-4 border-t border-slate-100 flex justify-between items-center">
+                      <p className={`text-sm line-clamp-2 mb-4 leading-relaxed transition-colors duration-500 ${
+                        isDark ? 'text-slate-400' : 'text-slate-600'
+                      }`}>{item.description}</p>
+                      <div className={`mt-auto pt-4 border-t flex justify-between items-center transition-colors duration-500 ${
+                        isDark ? 'border-slate-700' : 'border-slate-100'
+                      }`}>
                         <button
                           onClick={() => handleToggleStock(item)}
                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
                             item.isOutOfStock
-                              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                              : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                              ? isDark
+                                ? 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30 border border-emerald-500/30'
+                                : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                              : isDark
+                                ? 'bg-rose-500/20 text-rose-400 hover:bg-rose-500/30 border border-rose-500/30'
+                                : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
                           }`}
                         >
                           {item.isOutOfStock ? 'Mark In Stock' : 'Mark Out of Stock'}
@@ -832,7 +1118,7 @@ const MenuManagementView = ({ adminId }: { adminId: string }) => {
 };
 
 // --- Sub-View: Staff Management ---
-const StaffManagementView = ({ adminId }: { adminId: string }) => {
+const StaffManagementView = ({ adminId, isDark }: { adminId: string, isDark: boolean }) => {
   const [users, setUsers] = useState<User[]>([]);
   const [isAdding, setIsAdding] = useState(false);
   const [name, setName] = useState('');
@@ -893,8 +1179,12 @@ const StaffManagementView = ({ adminId }: { adminId: string }) => {
     <div className="space-y-6 animate-fade-in">
        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Team Management</h1>
-          <p className="text-sm text-slate-600">Manage your restaurant staff and access</p>
+          <h1 className={`text-3xl font-bold mb-1 tracking-tight transition-colors duration-500 ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}>Team Management</h1>
+          <p className={`text-sm transition-colors duration-500 ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>Manage your restaurant staff and access</p>
         </div>
         <Button 
           onClick={() => setIsAdding(!isAdding)} 
@@ -905,8 +1195,12 @@ const StaffManagementView = ({ adminId }: { adminId: string }) => {
       </div>
 
       {isAdding && (
-         <div className="bg-white rounded-xl p-5 border border-slate-200 shadow-sm animate-slide-up">
-            <h3 className="font-bold text-slate-900 mb-4 text-base">Register New Employee</h3>
+         <div className={`rounded-xl p-5 border shadow-sm animate-slide-up transition-all duration-500 ${
+              isDark ? 'bg-slate-800/60 border-slate-700/50' : 'bg-white border-slate-200'
+            }`}>
+            <h3 className={`font-bold mb-4 text-base transition-colors duration-500 ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>Register New Employee</h3>
             <form onSubmit={handleAddUser} className="space-y-4">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
@@ -1045,7 +1339,7 @@ const StaffManagementView = ({ adminId }: { adminId: string }) => {
 };
 
 // --- Sub-View: QR Menu Management ---
-const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantName?: string }) => {
+const QRMenuView = ({ adminId, restaurantName, isDark }: { adminId: string, restaurantName?: string, isDark: boolean }) => {
   const [selectedTable, setSelectedTable] = useState<string>('');
   const [qrCode, setQrCode] = useState<string>('');
   const [qrUrl, setQrUrl] = useState<string>('');
@@ -1102,25 +1396,37 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">QR Menu Generator</h1>
-          <p className="text-sm text-slate-600">Generate QR codes for your restaurant tables</p>
+          <h1 className={`text-3xl font-bold mb-1 tracking-tight transition-colors duration-500 ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}>QR Menu Generator</h1>
+          <p className={`text-sm transition-colors duration-500 ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>Generate QR codes for your restaurant tables</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+      <div className={`rounded-xl p-6 border shadow-sm transition-all duration-500 ${
+        isDark ? 'bg-slate-800/60 border-slate-700/50' : 'bg-white border-slate-200'
+      }`}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Table Selection */}
           <div>
-            <label className="block text-sm font-semibold text-slate-700 mb-3">Select Table Number</label>
-            <div className="grid grid-cols-5 gap-2 max-h-64 overflow-y-auto p-2 border border-slate-200 rounded-xl">
+            <label className={`block text-sm font-semibold mb-3 transition-colors duration-500 ${
+              isDark ? 'text-slate-300' : 'text-slate-700'
+            }`}>Select Table Number</label>
+            <div className={`grid grid-cols-5 gap-2 max-h-64 overflow-y-auto p-2 border rounded-xl transition-colors duration-500 ${
+              isDark ? 'border-slate-700/50' : 'border-slate-200'
+            }`}>
               {tableOptions.map((tableNum) => (
                 <button
                   key={tableNum}
                   onClick={() => setSelectedTable(tableNum)}
-                  className={`p-3 rounded-lg font-semibold transition-all ${
+                  className={`p-3 rounded-lg font-semibold transition-all duration-300 ${
                     selectedTable === tableNum
                       ? 'bg-emerald-600 text-white shadow-lg scale-105'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : isDark
+                        ? 'bg-slate-700/50 text-slate-300 hover:bg-slate-600/50'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
                   {tableNum}
@@ -1128,7 +1434,9 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
               ))}
             </div>
             {selectedTable && (
-              <p className="mt-3 text-sm text-slate-600">
+              <p className={`mt-3 text-sm transition-colors duration-500 ${
+                isDark ? 'text-slate-400' : 'text-slate-600'
+              }`}>
                 Selected: <span className="font-bold text-emerald-600">Table {selectedTable}</span>
               </p>
             )}
@@ -1138,11 +1446,17 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
           <div className="flex flex-col items-center justify-center">
             {qrCode ? (
               <div className="space-y-4">
-                <div className="bg-white p-4 rounded-xl border-2 border-slate-200 shadow-lg">
+                <div className={`p-4 rounded-xl border-2 shadow-lg transition-all duration-500 ${
+                  isDark 
+                    ? 'bg-slate-700/50 border-slate-600/50' 
+                    : 'bg-white border-slate-200'
+                }`}>
                   <img src={qrCode} alt="QR Code" className="w-64 h-64" />
                 </div>
                 <div className="text-center space-y-2">
-                  <p className="text-sm font-semibold text-slate-700">
+                  <p className={`text-sm font-semibold transition-colors duration-500 ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}>
                     {restaurantName || 'Restaurant'} - Table {selectedTable}
                   </p>
                   <div className="flex gap-2 justify-center">
@@ -1159,13 +1473,19 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
                         setQrUrl('');
                         setSelectedTable('');
                       }}
-                      className="bg-slate-200 hover:bg-slate-300 text-slate-700"
+                      className={`transition-all duration-500 ${
+                        isDark 
+                          ? 'bg-slate-700/50 hover:bg-slate-600/50 text-slate-300' 
+                          : 'bg-slate-200 hover:bg-slate-300 text-slate-700'
+                      }`}
                     >
                       Clear
                     </Button>
                   </div>
                   {qrUrl && (
-                    <p className="text-xs text-slate-500 mt-2 break-all">
+                    <p className={`text-xs mt-2 break-all transition-colors duration-500 ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`}>
                       URL: {qrUrl}
                     </p>
                   )}
@@ -1173,8 +1493,12 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
               </div>
             ) : (
               <div className="text-center py-12">
-                <QrCode className="w-24 h-24 text-slate-300 mx-auto mb-4" />
-                <p className="text-slate-500">Select a table and generate QR code</p>
+                <QrCode className={`w-24 h-24 mx-auto mb-4 transition-colors duration-500 ${
+                  isDark ? 'text-slate-500' : 'text-slate-300'
+                }`} />
+                <p className={`transition-colors duration-500 ${
+                  isDark ? 'text-slate-400' : 'text-slate-500'
+                }`}>Select a table and generate QR code</p>
               </div>
             )}
           </div>
@@ -1193,9 +1517,17 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
       </div>
 
       {/* Instructions */}
-      <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-        <h3 className="font-bold text-blue-900 mb-3">How to Use QR Menu</h3>
-        <ol className="list-decimal list-inside space-y-2 text-sm text-blue-800">
+      <div className={`border rounded-xl p-6 transition-all duration-500 ${
+        isDark 
+          ? 'bg-blue-900/30 border-blue-800/50' 
+          : 'bg-blue-50 border-blue-200'
+      }`}>
+        <h3 className={`font-bold mb-3 transition-colors duration-500 ${
+          isDark ? 'text-blue-300' : 'text-blue-900'
+        }`}>How to Use QR Menu</h3>
+        <ol className={`list-decimal list-inside space-y-2 text-sm transition-colors duration-500 ${
+          isDark ? 'text-blue-200' : 'text-blue-800'
+        }`}>
           <li>Select a table number from the grid above</li>
           <li>Click "Generate QR Code" to create a QR code for that table</li>
           <li>Download and print the QR code</li>
@@ -1209,7 +1541,7 @@ const QRMenuView = ({ adminId, restaurantName }: { adminId: string, restaurantNa
 };
 
 // --- Sub-View: Orders Management ---
-const OrdersView = ({ adminId }: { adminId: string }) => {
+const OrdersView = ({ adminId, isDark }: { adminId: string, isDark: boolean }) => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -1247,15 +1579,27 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
     ? orders 
     : orders.filter(o => o.status === statusFilter);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING_PAYMENT': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'PAID': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'IN_PROGRESS': return 'bg-orange-100 text-orange-800 border-orange-200';
-      case 'READY_FOR_PICKUP': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'SERVED': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
-      case 'CANCELLED': return 'bg-rose-100 text-rose-800 border-rose-200';
-      default: return 'bg-slate-100 text-slate-800 border-slate-200';
+  const getStatusColor = (status: string, isDark: boolean) => {
+    if (isDark) {
+      switch (status) {
+        case 'PENDING_PAYMENT': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+        case 'PAID': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+        case 'IN_PROGRESS': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+        case 'READY_FOR_PICKUP': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+        case 'SERVED': return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
+        case 'CANCELLED': return 'bg-rose-500/20 text-rose-400 border-rose-500/30';
+        default: return 'bg-slate-700/50 text-slate-300 border-slate-600/50';
+      }
+    } else {
+      switch (status) {
+        case 'PENDING_PAYMENT': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        case 'PAID': return 'bg-blue-100 text-blue-800 border-blue-200';
+        case 'IN_PROGRESS': return 'bg-orange-100 text-orange-800 border-orange-200';
+        case 'READY_FOR_PICKUP': return 'bg-purple-100 text-purple-800 border-purple-200';
+        case 'SERVED': return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+        case 'CANCELLED': return 'bg-rose-100 text-rose-800 border-rose-200';
+        default: return 'bg-slate-100 text-slate-800 border-slate-200';
+      }
     }
   };
 
@@ -1267,8 +1611,12 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Orders</h1>
-          <p className="text-sm text-slate-600">Manage and track all restaurant orders</p>
+          <h1 className={`text-3xl font-bold mb-1 tracking-tight transition-colors duration-500 ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}>Orders</h1>
+          <p className={`text-sm transition-colors duration-500 ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>Manage and track all restaurant orders</p>
         </div>
         <Button onClick={fetchOrders} className="bg-emerald-600 hover:bg-emerald-700 text-white">
           <RefreshCw className="w-4 h-4 mr-2" />
@@ -1282,10 +1630,14 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
           <button
             key={status}
             onClick={() => setStatusFilter(status)}
-            className={`px-4 py-2 rounded-xl font-semibold text-sm whitespace-nowrap transition-all ${
+            className={`px-4 py-2 rounded-xl font-semibold text-sm whitespace-nowrap transition-all duration-300 ${
               statusFilter === status
-                ? 'bg-slate-900 text-white shadow-lg'
-                : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                ? isDark
+                  ? 'bg-gradient-to-r from-pink-500 to-purple-600 text-white shadow-lg'
+                  : 'bg-slate-900 text-white shadow-lg'
+                : isDark
+                  ? 'bg-slate-800/60 text-slate-300 hover:bg-slate-700/60 border border-slate-700/50'
+                  : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
             }`}
           >
             {status === 'all' ? 'All Orders' : status.replace(/_/g, ' ')}
@@ -1299,53 +1651,89 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
           <LoadingSpinner size="lg" color="emerald" />
         </div>
       ) : filteredOrders.length === 0 ? (
-        <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
-          <ShoppingBag className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <p className="text-slate-600">No orders found</p>
+        <div className={`text-center py-12 rounded-xl border transition-all duration-500 ${
+          isDark 
+            ? 'bg-slate-800/60 border-slate-700/50' 
+            : 'bg-white border-slate-200'
+        }`}>
+          <ShoppingBag className={`w-16 h-16 mx-auto mb-4 transition-colors duration-500 ${
+            isDark ? 'text-slate-500' : 'text-slate-300'
+          }`} />
+          <p className={`transition-colors duration-500 ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>No orders found</p>
         </div>
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <Card key={order.id} className="p-6 hover:shadow-md transition-shadow">
+            <div key={order.id} className={`rounded-2xl shadow-sm border overflow-hidden p-6 hover:shadow-md transition-all duration-500 ${
+              isDark 
+                ? 'bg-slate-800/60 border-slate-700/50 hover:border-slate-600/50' 
+                : 'bg-white border-slate-100'
+            }`}>
               <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                 <div className="flex-1">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="text-lg font-bold text-slate-900">Order #{order.id}</h3>
-                    <Badge className={getStatusColor(order.status)}>
+                    <h3 className={`text-lg font-bold transition-colors duration-500 ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>Order #{order.id}</h3>
+                    <Badge className={getStatusColor(order.status, isDark)}>
                       {order.status.replace(/_/g, ' ')}
                     </Badge>
                   </div>
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4 text-sm">
                     <div>
-                      <p className="text-slate-500">Table</p>
-                      <p className="font-semibold text-slate-900">#{order.tableId}</p>
+                      <p className={`transition-colors duration-500 ${
+                        isDark ? 'text-slate-400' : 'text-slate-500'
+                      }`}>Table</p>
+                      <p className={`font-semibold transition-colors duration-500 ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>#{order.tableId}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Total</p>
+                      <p className={`transition-colors duration-500 ${
+                        isDark ? 'text-slate-400' : 'text-slate-500'
+                      }`}>Total</p>
                       <p className="font-semibold text-emerald-600">₹{order.totalAmount.toFixed(2)}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Customer</p>
-                      <p className="font-semibold text-slate-900">{order.customerName || 'Guest'}</p>
+                      <p className={`transition-colors duration-500 ${
+                        isDark ? 'text-slate-400' : 'text-slate-500'
+                      }`}>Customer</p>
+                      <p className={`font-semibold transition-colors duration-500 ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>{order.customerName || 'Guest'}</p>
                     </div>
                     <div>
-                      <p className="text-slate-500">Date</p>
-                      <p className="font-semibold text-slate-900">{formatDate(order.createdAt)}</p>
+                      <p className={`transition-colors duration-500 ${
+                        isDark ? 'text-slate-400' : 'text-slate-500'
+                      }`}>Date</p>
+                      <p className={`font-semibold transition-colors duration-500 ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>{formatDate(order.createdAt)}</p>
                     </div>
                   </div>
 
                   <div className="mb-4">
-                    <p className="text-sm font-semibold text-slate-700 mb-2">Items:</p>
+                    <p className={`text-sm font-semibold mb-2 transition-colors duration-500 ${
+                      isDark ? 'text-slate-300' : 'text-slate-700'
+                    }`}>Items:</p>
                     <div className="space-y-2">
                       {Array.isArray(order.items) && order.items.map((item: any, idx: number) => (
                         <div key={idx}>
-                          <div className="flex justify-between text-sm text-slate-600">
+                          <div className={`flex justify-between text-sm transition-colors duration-500 ${
+                            isDark ? 'text-slate-400' : 'text-slate-600'
+                          }`}>
                             <span>{item.quantity || 1}x {item.name}</span>
                             <span className="font-semibold">₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}</span>
                           </div>
                           {item.notes && (
-                            <div className="mt-1 text-xs text-amber-700 bg-amber-50 border border-amber-200 p-2 rounded">
+                            <div className={`mt-1 text-xs p-2 rounded border transition-all duration-500 ${
+                              isDark 
+                                ? 'text-amber-300 bg-amber-900/30 border-amber-800/50' 
+                                : 'text-amber-700 bg-amber-50 border-amber-200'
+                            }`}>
                               <span className="font-semibold">Note:</span> {item.notes}
                             </div>
                           )}
@@ -1382,7 +1770,7 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
                   )}
                 </div>
               </div>
-            </Card>
+            </div>
           ))}
         </div>
       )}
@@ -1391,7 +1779,7 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
 };
 
 // --- Sub-View: Subscription Management ---
-const SubscriptionView = ({ adminId }: { adminId: string }) => {
+const SubscriptionView = ({ adminId, isDark }: { adminId: string, isDark: boolean }) => {
   const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'inactive' | 'expired' | 'cancelled'>('inactive');
   const [subscriptionStartDate, setSubscriptionStartDate] = useState<Date | null>(null);
   const [subscriptionEndDate, setSubscriptionEndDate] = useState<Date | null>(null);
@@ -1480,8 +1868,12 @@ const SubscriptionView = ({ adminId }: { adminId: string }) => {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Subscription</h1>
-          <p className="text-sm text-slate-600">Manage your restaurant subscription plan</p>
+          <h1 className={`text-3xl font-bold mb-1 tracking-tight transition-colors duration-500 ${
+            isDark ? 'text-white' : 'text-slate-900'
+          }`}>Subscription</h1>
+          <p className={`text-sm transition-colors duration-500 ${
+            isDark ? 'text-slate-400' : 'text-slate-600'
+          }`}>Manage your restaurant subscription plan</p>
         </div>
       </div>
 
@@ -1492,26 +1884,41 @@ const SubscriptionView = ({ adminId }: { adminId: string }) => {
       ) : (
         <>
           {/* Current Subscription Status */}
-          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+          <div className={`rounded-xl p-6 border shadow-sm transition-all duration-500 ${
+              isDark ? 'bg-slate-800/60 border-slate-700/50' : 'bg-white border-slate-200'
+            }`}>
             <div className="flex items-center justify-between mb-6">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 mb-1">Current Plan</h2>
-                <p className="text-sm text-slate-600">Monthly Subscription Plan</p>
+                <h2 className={`text-xl font-bold mb-1 transition-colors duration-500 ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>Current Plan</h2>
+                <p className={`text-sm transition-colors duration-500 ${
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                }`}>Monthly Subscription Plan</p>
               </div>
               {subscriptionStatus === 'active' && (
-                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                <Badge className={isDark 
+                  ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30" 
+                  : "bg-emerald-100 text-emerald-700 border-emerald-200"
+                }>
                   <CheckCircle2 className="w-3 h-3 mr-1" />
                   Active
                 </Badge>
               )}
               {subscriptionStatus === 'cancelled' && (
-                <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                <Badge className={isDark 
+                  ? "bg-amber-500/20 text-amber-400 border-amber-500/30" 
+                  : "bg-amber-100 text-amber-700 border-amber-200"
+                }>
                   <XCircle className="w-3 h-3 mr-1" />
                   Cancelled
                 </Badge>
               )}
               {subscriptionStatus === 'inactive' && (
-                <Badge className="bg-slate-100 text-slate-700 border-slate-200">
+                <Badge className={isDark 
+                  ? "bg-slate-700/50 text-slate-300 border-slate-600/50" 
+                  : "bg-slate-100 text-slate-700 border-slate-200"
+                }>
                   <XCircle className="w-3 h-3 mr-1" />
                   Inactive
                 </Badge>
@@ -1519,55 +1926,85 @@ const SubscriptionView = ({ adminId }: { adminId: string }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5 border border-emerald-100">
+              <div className={`rounded-xl p-5 border transition-all duration-500 ${
+                isDark 
+                  ? 'bg-gradient-to-br from-emerald-900/30 to-teal-900/30 border-emerald-800/50' 
+                  : 'bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-100'
+              }`}>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-md shadow-emerald-500/20">
                     <CreditCard className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monthly Price</p>
-                    <h3 className="text-2xl font-bold text-slate-900">₹{PLAN_PRICE}</h3>
+                    <p className={`text-xs font-semibold uppercase tracking-wide transition-colors duration-500 ${
+                      isDark ? 'text-slate-400' : 'text-slate-500'
+                    }`}>Monthly Price</p>
+                    <h3 className={`text-2xl font-bold transition-colors duration-500 ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>₹{PLAN_PRICE}</h3>
                   </div>
                 </div>
-                <p className="text-xs text-slate-600">Billed monthly</p>
+                <p className={`text-xs transition-colors duration-500 ${
+                  isDark ? 'text-slate-400' : 'text-slate-600'
+                }`}>Billed monthly</p>
               </div>
 
               {subscriptionStartDate && (
-                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+                <div className={`rounded-xl p-5 border transition-all duration-500 ${
+                  isDark 
+                    ? 'bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-800/50' 
+                    : 'bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-100'
+                }`}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md shadow-blue-500/20">
                       <Calendar className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Start Date</p>
-                      <h3 className="text-lg font-bold text-slate-900">{formatDate(subscriptionStartDate)}</h3>
+                      <p className={`text-xs font-semibold uppercase tracking-wide transition-colors duration-500 ${
+                        isDark ? 'text-slate-400' : 'text-slate-500'
+                      }`}>Start Date</p>
+                      <h3 className={`text-lg font-bold transition-colors duration-500 ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>{formatDate(subscriptionStartDate)}</h3>
                     </div>
                   </div>
                 </div>
               )}
 
               {subscriptionEndDate && (
-                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100">
+                <div className={`rounded-xl p-5 border transition-all duration-500 ${
+                  isDark 
+                    ? 'bg-gradient-to-br from-purple-900/30 to-pink-900/30 border-purple-800/50' 
+                    : 'bg-gradient-to-br from-purple-50 to-pink-50 border-purple-100'
+                }`}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="p-2.5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-md shadow-purple-500/20">
                       <Clock className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                      <p className={`text-xs font-semibold uppercase tracking-wide transition-colors duration-500 ${
+                        isDark ? 'text-slate-400' : 'text-slate-500'
+                      }`}>
                         {subscriptionStatus === 'cancelled' ? 'Expires On' : 'Renews On'}
                       </p>
-                      <h3 className="text-lg font-bold text-slate-900">{formatDate(subscriptionEndDate)}</h3>
+                      <h3 className={`text-lg font-bold transition-colors duration-500 ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>{formatDate(subscriptionEndDate)}</h3>
                     </div>
                   </div>
                   {subscriptionStatus === 'active' && (
-                    <p className="text-xs text-slate-600">{getDaysRemaining()} days remaining</p>
+                    <p className={`text-xs transition-colors duration-500 ${
+                      isDark ? 'text-slate-400' : 'text-slate-600'
+                    }`}>{getDaysRemaining()} days remaining</p>
                   )}
                 </div>
               )}
             </div>
 
             {/* Action Buttons */}
-            <div className="flex gap-3 pt-6 border-t border-slate-200">
+            <div className={`flex gap-3 pt-6 border-t transition-colors duration-500 ${
+              isDark ? 'border-slate-700' : 'border-slate-200'
+            }`}>
               {subscriptionStatus === 'inactive' && (
                 <Button
                   onClick={handleSubscribe}
@@ -1614,8 +2051,12 @@ const SubscriptionView = ({ adminId }: { adminId: string }) => {
           </div>
 
           {/* Plan Features */}
-          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-            <h3 className="text-lg font-bold text-slate-900 mb-4">Plan Features</h3>
+          <div className={`rounded-xl p-6 border shadow-sm transition-all duration-500 ${
+              isDark ? 'bg-slate-800/60 border-slate-700/50' : 'bg-white border-slate-200'
+            }`}>
+            <h3 className={`text-lg font-bold mb-4 transition-colors duration-500 ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>Plan Features</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {[
                 'Unlimited menu items',
@@ -1627,7 +2068,9 @@ const SubscriptionView = ({ adminId }: { adminId: string }) => {
               ].map((feature, index) => (
                 <div key={index} className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
-                  <span className="text-sm text-slate-700 font-medium">{feature}</span>
+                  <span className={`text-sm font-medium transition-colors duration-500 ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}>{feature}</span>
                 </div>
               ))}
             </div>
@@ -1635,17 +2078,31 @@ const SubscriptionView = ({ adminId }: { adminId: string }) => {
 
           {/* Billing History */}
           {subscriptionStatus !== 'inactive' && (
-            <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
-              <h3 className="text-lg font-bold text-slate-900 mb-4">Billing History</h3>
+            <div className={`rounded-xl p-6 border shadow-sm transition-all duration-500 ${
+              isDark ? 'bg-slate-800/60 border-slate-700/50' : 'bg-white border-slate-200'
+            }`}>
+              <h3 className={`text-lg font-bold mb-4 transition-colors duration-500 ${
+                isDark ? 'text-white' : 'text-slate-900'
+              }`}>Billing History</h3>
               <div className="space-y-3">
                 {subscriptionStartDate && (
-                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                  <div className={`flex items-center justify-between p-4 rounded-lg border transition-all duration-500 ${
+                    isDark 
+                      ? 'bg-slate-700/50 border-slate-600/50' 
+                      : 'bg-slate-50 border-slate-200'
+                  }`}>
                     <div>
-                      <p className="font-semibold text-slate-900">Monthly Subscription</p>
-                      <p className="text-sm text-slate-600">{formatDate(subscriptionStartDate)}</p>
+                      <p className={`font-semibold transition-colors duration-500 ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>Monthly Subscription</p>
+                      <p className={`text-sm transition-colors duration-500 ${
+                        isDark ? 'text-slate-400' : 'text-slate-600'
+                      }`}>{formatDate(subscriptionStartDate)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-bold text-slate-900">₹{PLAN_PRICE}</p>
+                      <p className={`font-bold transition-colors duration-500 ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>₹{PLAN_PRICE}</p>
                       <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 mt-1">
                         Paid
                       </Badge>
@@ -1666,6 +2123,20 @@ export const AdminDashboard = ({ user, onLogout }: { user: User, onLogout: () =>
   const [activePage, setActivePage] = useState('overview');
   const [restaurantName, setRestaurantName] = useState<string | undefined>(user.restaurantName);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Theme state with localStorage persistence
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem('admin_theme');
+    return saved ? saved === 'dark' : true; // Default to dark mode
+  });
+
+  useEffect(() => {
+    localStorage.setItem('admin_theme', isDark ? 'dark' : 'light');
+  }, [isDark]);
+
+  const toggleTheme = () => {
+    setIsDark(prev => !prev);
+  };
 
   // Fetch restaurant name on mount and whenever user changes
   useEffect(() => {
@@ -1709,7 +2180,10 @@ export const AdminDashboard = ({ user, onLogout }: { user: User, onLogout: () =>
   }, [user.id, user.role]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-50 flex font-sans">
+    <div className={`min-h-screen flex font-sans relative transition-colors duration-500 ${
+      isDark ? 'bg-slate-900' : 'bg-gradient-to-br from-slate-50 via-white to-slate-50'
+    }`}>
+
        {/* Sidebar */}
        <Sidebar 
          activePage={activePage} 
@@ -1719,26 +2193,34 @@ export const AdminDashboard = ({ user, onLogout }: { user: User, onLogout: () =>
          userName={user.name}
          isOpen={sidebarOpen}
          setIsOpen={setSidebarOpen}
+         isDark={isDark}
+         onThemeToggle={toggleTheme}
        />
 
        {/* Main Content Area */}
-       <div className="flex-1 lg:ml-80 p-4 sm:p-6 overflow-y-auto min-h-screen">
+       <div className="flex-1 lg:ml-80 p-4 sm:p-6 overflow-y-auto min-h-screen relative z-10">
           {/* Mobile Menu Button */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors touch-manipulation"
+            className={`lg:hidden fixed top-4 left-4 z-30 p-2 backdrop-blur-sm rounded-lg shadow-lg border transition-all duration-500 touch-manipulation ${
+              isDark 
+                ? 'bg-slate-800/90 border-slate-700/50 hover:bg-slate-700/90' 
+                : 'bg-white/90 border-slate-200/50 hover:bg-white'
+            }`}
           >
-            <MenuIcon className="w-6 h-6 text-slate-700" />
+            <MenuIcon className={`w-6 h-6 transition-colors duration-500 ${
+              isDark ? 'text-white' : 'text-slate-700'
+            }`} />
           </button>
           
           <div className="max-w-7xl mx-auto">
-             {activePage === 'overview' && <AnalyticsView restaurantName={restaurantName} adminId={user.id} />}
-             {activePage === 'analytics' && <AnalyticsView restaurantName={restaurantName} adminId={user.id} />}
-             {activePage === 'menu' && <MenuManagementView adminId={user.id} />}
-             {activePage === 'staff' && <StaffManagementView adminId={user.id} />}
-             {activePage === 'qrmenu' && <QRMenuView adminId={user.id} restaurantName={restaurantName} />}
-             {activePage === 'orders' && <OrdersView adminId={user.id} />}
-             {activePage === 'subscription' && <SubscriptionView adminId={user.id} />}
+             {activePage === 'overview' && <AnalyticsView restaurantName={restaurantName} adminId={user.id} isDark={isDark} />}
+             {activePage === 'analytics' && <AnalyticsView restaurantName={restaurantName} adminId={user.id} isDark={isDark} />}
+             {activePage === 'menu' && <MenuManagementView adminId={user.id} isDark={isDark} />}
+             {activePage === 'staff' && <StaffManagementView adminId={user.id} isDark={isDark} />}
+             {activePage === 'qrmenu' && <QRMenuView adminId={user.id} restaurantName={restaurantName} isDark={isDark} />}
+             {activePage === 'orders' && <OrdersView adminId={user.id} isDark={isDark} />}
+             {activePage === 'subscription' && <SubscriptionView adminId={user.id} isDark={isDark} />}
           </div>
        </div>
     </div>

@@ -4,6 +4,10 @@ import { User, UserRole } from '../types';
 import { Button, Card, LoadingSpinner } from '../components/ui';
 import { Utensils, Lock, Mail, User as UserIcon, Shield, UserCheck, ChefHat, Coffee, ArrowRight, ArrowLeft } from 'lucide-react';
 
+// Get super admin credentials from environment variables
+const SUPER_ADMIN_EMAIL = import.meta.env.VITE_SUPER_ADMIN_EMAIL || '';
+const SUPER_ADMIN_PASSWORD = import.meta.env.VITE_SUPER_ADMIN_PASSWORD || '';
+
 interface AuthProps {
   onLogin: (user: User) => void;
   onBack?: () => void;
@@ -30,6 +34,21 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack }) => {
         onLogin(user);
       } else {
         if (!email || !password) throw new Error("All fields required");
+        
+        // Check for super admin credentials
+        if (SUPER_ADMIN_EMAIL && SUPER_ADMIN_PASSWORD && 
+            email === SUPER_ADMIN_EMAIL && password === SUPER_ADMIN_PASSWORD) {
+          const superAdminUser: User = {
+            id: 'super_admin_1',
+            email: SUPER_ADMIN_EMAIL,
+            name: 'Super Admin',
+            role: UserRole.SUPER_ADMIN,
+          };
+          onLogin(superAdminUser);
+          return;
+        }
+        
+        // Regular login
         const user = await API.login(email, password);
         if (user) {
           onLogin(user);

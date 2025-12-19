@@ -3,6 +3,7 @@ import { CustomerApp } from './views/CustomerApp';
 import { KitchenDisplay } from './views/KitchenDisplay';
 import { StaffPOS } from './views/StaffPOS';
 import { AdminDashboard } from './views/AdminDashboard';
+import { SuperAdminDashboard } from './views/SuperAdminDashboard';
 import { Auth } from './views/Auth';
 import { LandingPage } from './views/LandingPage';
 import { RestaurantRegistration, RestaurantFormData } from './views/RestaurantRegistration';
@@ -542,6 +543,8 @@ export default function App() {
     );
 
     switch (currentUser.role) {
+      case UserRole.SUPER_ADMIN:
+        return <SuperAdminDashboard user={currentUser} onLogout={handleLogout} />;
       case UserRole.ADMIN:
         return <AdminDashboard user={currentUser} onLogout={handleLogout} />;
       case UserRole.KITCHEN:

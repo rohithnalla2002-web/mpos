@@ -9,7 +9,7 @@ import {
   Calendar, Menu as MenuIcon, Search, Mail, UserPlus, ArrowUpRight,
   Activity, Clock, Award, Bell, MoreVertical, Edit2, Trash2, Eye,
   Zap, Target, PieChart, ArrowDownRight, Filter, Download, RefreshCw,
-  QrCode, Download as DownloadIcon, X, TrendingDown
+  QrCode, Download as DownloadIcon, X, TrendingDown, CreditCard, CheckCircle2, XCircle
 } from 'lucide-react';
 
 // --- Revenue Line Chart Component ---
@@ -241,6 +241,7 @@ const Sidebar = ({ activePage, setPage, onLogout, restaurantName, userName, isOp
     { id: 'staff', label: 'Team', icon: Users, color: 'purple' },
     { id: 'qrmenu', label: 'QR Menu', icon: QrCode, color: 'indigo' },
     { id: 'orders', label: 'Orders', icon: ShoppingBag, color: 'rose' },
+    { id: 'subscription', label: 'Subscription', icon: CreditCard, color: 'violet' },
   ];
 
   return (
@@ -1389,6 +1390,304 @@ const OrdersView = ({ adminId }: { adminId: string }) => {
   );
 };
 
+// --- Sub-View: Subscription Management ---
+const SubscriptionView = ({ adminId }: { adminId: string }) => {
+  const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'inactive' | 'expired' | 'cancelled'>('inactive');
+  const [subscriptionStartDate, setSubscriptionStartDate] = useState<Date | null>(null);
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState<Date | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const PLAN_PRICE = 200; // ₹200 per month
+
+  useEffect(() => {
+    // Fetch subscription status
+    const fetchSubscription = async () => {
+      try {
+        setLoading(true);
+        // TODO: Replace with actual API call
+        // const subscription = await API.getSubscription(adminId);
+        // For now, using mock data
+        const storedSubscription = localStorage.getItem(`subscription_${adminId}`);
+        if (storedSubscription) {
+          const sub = JSON.parse(storedSubscription);
+          setSubscriptionStatus(sub.status);
+          setSubscriptionStartDate(sub.startDate ? new Date(sub.startDate) : null);
+          setSubscriptionEndDate(sub.endDate ? new Date(sub.endDate) : null);
+        }
+      } catch (error) {
+        console.error('Error fetching subscription:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSubscription();
+  }, [adminId]);
+
+  const handleSubscribe = async () => {
+    if (!confirm(`Subscribe to the plan for ₹${PLAN_PRICE} per month?`)) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // TODO: Replace with actual API call
+      // await API.subscribe(adminId, PLAN_PRICE);
+      
+      // Mock subscription activation
+      const startDate = new Date();
+      const endDate = new Date();
+      endDate.setMonth(endDate.getMonth() + 1);
+
+      const subscription = {
+        status: 'active' as const,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+      };
+
+      localStorage.setItem(`subscription_${adminId}`, JSON.stringify(subscription));
+      setSubscriptionStatus('active');
+      setSubscriptionStartDate(startDate);
+      setSubscriptionEndDate(endDate);
+      
+      alert('Subscription activated successfully!');
+    } catch (error: any) {
+      console.error('Error subscribing:', error);
+      alert(error.message || 'Failed to activate subscription');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleCancel = async () => {
+    if (!confirm('Are you sure you want to cancel your subscription? You will lose access at the end of the current billing period.')) {
+      return;
+    }
+
+    setIsProcessing(true);
+    try {
+      // TODO: Replace with actual API call
+      // await API.cancelSubscription(adminId);
+      
+      // Mock subscription cancellation
+      const storedSubscription = localStorage.getItem(`subscription_${adminId}`);
+      if (storedSubscription) {
+        const sub = JSON.parse(storedSubscription);
+        sub.status = 'cancelled';
+        localStorage.setItem(`subscription_${adminId}`, JSON.stringify(sub));
+        setSubscriptionStatus('cancelled');
+      }
+      
+      alert('Subscription cancelled. You will have access until the end of the current billing period.');
+    } catch (error: any) {
+      console.error('Error cancelling subscription:', error);
+      alert(error.message || 'Failed to cancel subscription');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const formatDate = (date: Date | null) => {
+    if (!date) return 'N/A';
+    return date.toLocaleDateString('en-IN', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+  };
+
+  const getDaysRemaining = () => {
+    if (!subscriptionEndDate) return 0;
+    const today = new Date();
+    const diffTime = subscriptionEndDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
+  };
+
+  return (
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Subscription</h1>
+          <p className="text-sm text-slate-600">Manage your restaurant subscription plan</p>
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <LoadingSpinner size="lg" color="emerald" />
+        </div>
+      ) : (
+        <>
+          {/* Current Subscription Status */}
+          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-slate-900 mb-1">Current Plan</h2>
+                <p className="text-sm text-slate-600">Monthly Subscription Plan</p>
+              </div>
+              {subscriptionStatus === 'active' && (
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">
+                  <CheckCircle2 className="w-3 h-3 mr-1" />
+                  Active
+                </Badge>
+              )}
+              {subscriptionStatus === 'cancelled' && (
+                <Badge className="bg-amber-100 text-amber-700 border-amber-200">
+                  <XCircle className="w-3 h-3 mr-1" />
+                  Cancelled
+                </Badge>
+              )}
+              {subscriptionStatus === 'inactive' && (
+                <Badge className="bg-slate-100 text-slate-700 border-slate-200">
+                  <XCircle className="w-3 h-3 mr-1" />
+                  Inactive
+                </Badge>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+              <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-5 border border-emerald-100">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="p-2.5 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-lg shadow-md shadow-emerald-500/20">
+                    <CreditCard className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Monthly Price</p>
+                    <h3 className="text-2xl font-bold text-slate-900">₹{PLAN_PRICE}</h3>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-600">Billed monthly</p>
+              </div>
+
+              {subscriptionStartDate && (
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border border-blue-100">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2.5 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-md shadow-blue-500/20">
+                      <Calendar className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Start Date</p>
+                      <h3 className="text-lg font-bold text-slate-900">{formatDate(subscriptionStartDate)}</h3>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {subscriptionEndDate && (
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2.5 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg shadow-md shadow-purple-500/20">
+                      <Clock className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">
+                        {subscriptionStatus === 'cancelled' ? 'Expires On' : 'Renews On'}
+                      </p>
+                      <h3 className="text-lg font-bold text-slate-900">{formatDate(subscriptionEndDate)}</h3>
+                    </div>
+                  </div>
+                  {subscriptionStatus === 'active' && (
+                    <p className="text-xs text-slate-600">{getDaysRemaining()} days remaining</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-6 border-t border-slate-200">
+              {subscriptionStatus === 'inactive' && (
+                <Button
+                  onClick={handleSubscribe}
+                  disabled={isProcessing}
+                  className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/20 border-0"
+                >
+                  {isProcessing ? <LoadingSpinner /> : (
+                    <>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Subscribe Now - ₹{PLAN_PRICE}/month
+                    </>
+                  )}
+                </Button>
+              )}
+              {subscriptionStatus === 'active' && (
+                <Button
+                  onClick={handleCancel}
+                  disabled={isProcessing}
+                  className="bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white shadow-lg shadow-rose-500/20 border-0"
+                >
+                  {isProcessing ? <LoadingSpinner /> : (
+                    <>
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Cancel Subscription
+                    </>
+                  )}
+                </Button>
+              )}
+              {subscriptionStatus === 'cancelled' && (
+                <Button
+                  onClick={handleSubscribe}
+                  disabled={isProcessing}
+                  className="bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white shadow-lg shadow-emerald-500/20 border-0"
+                >
+                  {isProcessing ? <LoadingSpinner /> : (
+                    <>
+                      <CreditCard className="w-4 h-4 mr-2" />
+                      Reactivate Subscription
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Plan Features */}
+          <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+            <h3 className="text-lg font-bold text-slate-900 mb-4">Plan Features</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                'Unlimited menu items',
+                'QR code generation',
+                'Order management',
+                'Analytics dashboard',
+                'Staff management',
+                'Customer support',
+              ].map((feature, index) => (
+                <div key={index} className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                  <span className="text-sm text-slate-700 font-medium">{feature}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Billing History */}
+          {subscriptionStatus !== 'inactive' && (
+            <div className="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+              <h3 className="text-lg font-bold text-slate-900 mb-4">Billing History</h3>
+              <div className="space-y-3">
+                {subscriptionStartDate && (
+                  <div className="flex items-center justify-between p-4 bg-slate-50 rounded-lg border border-slate-200">
+                    <div>
+                      <p className="font-semibold text-slate-900">Monthly Subscription</p>
+                      <p className="text-sm text-slate-600">{formatDate(subscriptionStartDate)}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-slate-900">₹{PLAN_PRICE}</p>
+                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 mt-1">
+                        Paid
+                      </Badge>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+};
+
 // --- Main Layout Component ---
 export const AdminDashboard = ({ user, onLogout }: { user: User, onLogout: () => void }) => {
   const [activePage, setActivePage] = useState('overview');
@@ -1466,6 +1765,7 @@ export const AdminDashboard = ({ user, onLogout }: { user: User, onLogout: () =>
              {activePage === 'staff' && <StaffManagementView adminId={user.id} />}
              {activePage === 'qrmenu' && <QRMenuView adminId={user.id} restaurantName={restaurantName} />}
              {activePage === 'orders' && <OrdersView adminId={user.id} />}
+             {activePage === 'subscription' && <SubscriptionView adminId={user.id} />}
           </div>
        </div>
     </div>

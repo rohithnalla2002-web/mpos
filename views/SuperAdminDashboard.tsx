@@ -610,20 +610,24 @@ const SubscriptionsView = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
+  const fetchSubscriptions = async () => {
+    try {
+      setLoading(true);
+      const data = await API.getAllSubscriptions();
+      setSubscriptions(data);
+    } catch (error) {
+      console.error('Error fetching subscriptions:', error);
+      setSubscriptions([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    const fetchSubscriptions = async () => {
-      try {
-        setLoading(true);
-        const data = await API.getAllSubscriptions();
-        setSubscriptions(data);
-      } catch (error) {
-        console.error('Error fetching subscriptions:', error);
-        setSubscriptions([]);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchSubscriptions();
+    // Refresh every 10 seconds to get latest subscription status
+    const interval = setInterval(fetchSubscriptions, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   const filteredSubscriptions = statusFilter === 'all'
@@ -655,8 +659,8 @@ const SubscriptionsView = () => {
           <h1 className="text-3xl font-bold text-slate-900 mb-1 tracking-tight">Subscriptions</h1>
           <p className="text-sm text-slate-600">Manage all restaurant subscriptions</p>
         </div>
-        <Button onClick={() => window.location.reload()} className="bg-indigo-600 hover:bg-indigo-700 text-white">
-          <RefreshCw className="w-4 h-4 mr-2" />
+        <Button onClick={fetchSubscriptions} disabled={loading} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>

@@ -298,6 +298,25 @@ async function initializeDatabase() {
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_user_id ON ratings(user_id)`);
     await pool.query(`CREATE INDEX IF NOT EXISTS idx_ratings_admin_id ON ratings(admin_id)`);
 
+    // Create Subscriptions table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS subscriptions (
+        id SERIAL PRIMARY KEY,
+        admin_id INTEGER REFERENCES admin(id) ON DELETE CASCADE,
+        status VARCHAR(50) NOT NULL DEFAULT 'inactive',
+        start_date TIMESTAMP,
+        end_date TIMESTAMP,
+        amount DECIMAL(10, 2) NOT NULL DEFAULT 200.00,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(admin_id)
+      )
+    `);
+
+    // Add indexes for subscriptions
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_subscriptions_admin_id ON subscriptions(admin_id)`);
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_subscriptions_status ON subscriptions(status)`);
+
     console.log('✅ Database tables created/verified');
 
     // Seed admin user if not exists
@@ -2134,9 +2153,11 @@ app.get('/api/super-admin/stats', async (req, res) => {
                        parseInt(kitchenCount.rows[0].count) + 
                        parseInt(customerCount.rows[0].count);
 
-    // Get active subscriptions (mock for now - you'll need to create subscriptions table)
-    // For now, we'll count admins with restaurant_name as "active" subscriptions
-    const activeSubscriptions = totalRestaurants;
+    // Get active subscriptions from subscriptions table
+    const subscriptionsResult = await pool.query(
+      `SELECT COUNT(*) as count FROM subscriptions WHERE status = 'active'`
+    );
+    const activeSubscriptions = parseInt(subscriptionsResult.rows[0].count) || 0;
 
     // Calculate total revenue from orders (last 30 days)
     const revenueResult = await pool.query(
@@ -2261,42 +2282,183 @@ app.get('/api/super-admin/users', async (req, res) => {
 // Get all subscriptions
 app.get('/api/super-admin/subscriptions', async (req, res) => {
   try {
-    // For now, we'll create subscriptions based on admin restaurant registrations
-    // In the future, you should create a proper subscriptions table
     const result = await pool.query(
       `SELECT 
-        id,
-        restaurant_name,
-        email as admin_email,
-        created_at,
-        registration_status
-      FROM admin 
-      WHERE restaurant_name IS NOT NULL AND restaurant_name != ''
-      ORDER BY created_at DESC`
+        s.id,
+        s.admin_id,
+        s.status,
+        s.start_date,
+        s.end_date,
+        s.amount,
+        s.created_at,
+        a.restaurant_name,
+        a.email as admin_email
+      FROM subscriptions s
+      LEFT JOIN admin a ON s.admin_id = a.id
+      ORDER BY s.created_at DESC`
     );
 
-    const subscriptions = result.rows.map((row, index) => {
-      const startDate = new Date(row.created_at);
-      const endDate = new Date(startDate);
-      endDate.setMonth(endDate.getMonth() + 1); // 1 month subscription
+    const now = new Date();
+    const subscriptions = result.rows.map(row => {
+      // Determine actual status - check if expired
+      let actualStatus = row.status || 'inactive';
+      if (row.status === 'active' && row.end_date) {
+        const endDate = new Date(row.end_date);
+        if (endDate < now) {
+          actualStatus = 'expired';
+        }
+      }
 
       return {
         id: `sub_${row.id}`,
-        restaurantId: `rest_${row.id}`,
-        restaurantName: row.restaurant_name,
-        adminId: row.id.toString(),
-        adminEmail: row.email,
-        status: row.registration_status === 'approved' ? 'active' : 'inactive',
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-        amount: 200, // ₹200 per month
-        createdAt: row.created_at.toISOString(),
+        restaurantId: `rest_${row.admin_id}`,
+        restaurantName: row.restaurant_name || 'Unnamed Restaurant',
+        adminId: row.admin_id.toString(),
+        adminEmail: row.admin_email || 'N/A',
+        status: actualStatus,
+        startDate: row.start_date ? new Date(row.start_date).toISOString() : null,
+        endDate: row.end_date ? new Date(row.end_date).toISOString() : null,
+        amount: parseFloat(row.amount) || 200,
+        createdAt: row.created_at ? new Date(row.created_at).toISOString() : new Date().toISOString(),
       };
     });
 
     res.json(subscriptions);
   } catch (error) {
     console.error('Error fetching subscriptions:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get subscription for a specific admin
+app.get('/api/subscription/:adminId', async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const result = await pool.query(
+      `SELECT 
+        s.id,
+        s.admin_id,
+        s.status,
+        s.start_date,
+        s.end_date,
+        s.amount,
+        s.created_at,
+        a.restaurant_name
+      FROM subscriptions s
+      LEFT JOIN admin a ON s.admin_id = a.id
+      WHERE s.admin_id = $1`,
+      [adminId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({
+        status: 'inactive',
+        startDate: null,
+        endDate: null,
+        amount: 200,
+      });
+    }
+
+    const row = result.rows[0];
+    const now = new Date();
+    
+    // Check if subscription is expired
+    let actualStatus = row.status || 'inactive';
+    if (row.status === 'active' && row.end_date) {
+      const endDate = new Date(row.end_date);
+      if (endDate < now) {
+        actualStatus = 'expired';
+      }
+    }
+
+    res.json({
+      id: row.id.toString(),
+      status: actualStatus,
+      startDate: row.start_date ? new Date(row.start_date).toISOString() : null,
+      endDate: row.end_date ? new Date(row.end_date).toISOString() : null,
+      amount: parseFloat(row.amount) || 200,
+      createdAt: row.created_at ? new Date(row.created_at).toISOString() : null,
+    });
+  } catch (error) {
+    console.error('Error fetching subscription:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Create or update subscription
+app.post('/api/subscription/:adminId', async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const { status = 'active' } = req.body;
+
+    const startDate = new Date();
+    const endDate = new Date();
+    endDate.setMonth(endDate.getMonth() + 1); // 1 month subscription
+
+    // Check if subscription exists
+    const existing = await pool.query(
+      'SELECT id FROM subscriptions WHERE admin_id = $1',
+      [adminId]
+    );
+
+    let result;
+    if (existing.rows.length > 0) {
+      // Update existing subscription - always set to active when subscribing
+      result = await pool.query(
+        `UPDATE subscriptions 
+         SET status = 'active', start_date = $1, end_date = $2, updated_at = CURRENT_TIMESTAMP
+         WHERE admin_id = $3
+         RETURNING id, status, start_date, end_date, amount`,
+        [startDate, endDate, adminId]
+      );
+    } else {
+      // Create new subscription - always active
+      result = await pool.query(
+        `INSERT INTO subscriptions (admin_id, status, start_date, end_date, amount)
+         VALUES ($1, 'active', $2, $3, $4)
+         RETURNING id, status, start_date, end_date, amount`,
+        [adminId, startDate, endDate, 200]
+      );
+    }
+
+    const row = result.rows[0];
+    res.json({
+      id: row.id.toString(),
+      status: row.status,
+      startDate: new Date(row.start_date).toISOString(),
+      endDate: new Date(row.end_date).toISOString(),
+      amount: parseFloat(row.amount),
+    });
+  } catch (error) {
+    console.error('Error creating/updating subscription:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Cancel subscription
+app.patch('/api/subscription/:adminId/cancel', async (req, res) => {
+  try {
+    const { adminId } = req.params;
+    const result = await pool.query(
+      `UPDATE subscriptions 
+       SET status = 'cancelled', updated_at = CURRENT_TIMESTAMP
+       WHERE admin_id = $1
+       RETURNING id, status, end_date`,
+      [adminId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Subscription not found' });
+    }
+
+    const row = result.rows[0];
+    res.json({
+      id: row.id.toString(),
+      status: row.status,
+      endDate: row.end_date ? new Date(row.end_date).toISOString() : null,
+    });
+  } catch (error) {
+    console.error('Error cancelling subscription:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

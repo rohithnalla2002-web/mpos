@@ -700,5 +700,86 @@ export const API = {
       throw error;
     }
   },
+
+  // Get subscription for a specific admin
+  getSubscription: async (adminId: string): Promise<{
+    id?: string;
+    status: string;
+    startDate: string | null;
+    endDate: string | null;
+    amount: number;
+    createdAt?: string | null;
+  }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscription/${adminId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch subscription');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error fetching subscription:', error);
+      throw error;
+    }
+  },
+
+  // Create or update subscription
+  subscribe: async (adminId: string, amount: number = 200): Promise<{
+    id: string;
+    status: string;
+    startDate: string;
+    endDate: string;
+    amount: number;
+  }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscription/${adminId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'active' }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create subscription');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error creating subscription:', error);
+      throw error;
+    }
+  },
+
+  // Cancel subscription
+  cancelSubscription: async (adminId: string): Promise<{
+    id: string;
+    status: string;
+    endDate: string | null;
+  }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/subscription/${adminId}/cancel`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel subscription');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error cancelling subscription:', error);
+      throw error;
+    }
+  },
 };
 

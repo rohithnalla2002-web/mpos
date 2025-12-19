@@ -1404,18 +1404,14 @@ const SubscriptionView = ({ adminId }: { adminId: string }) => {
     const fetchSubscription = async () => {
       try {
         setLoading(true);
-        // TODO: Replace with actual API call
-        // const subscription = await API.getSubscription(adminId);
-        // For now, using mock data
-        const storedSubscription = localStorage.getItem(`subscription_${adminId}`);
-        if (storedSubscription) {
-          const sub = JSON.parse(storedSubscription);
-          setSubscriptionStatus(sub.status);
-          setSubscriptionStartDate(sub.startDate ? new Date(sub.startDate) : null);
-          setSubscriptionEndDate(sub.endDate ? new Date(sub.endDate) : null);
-        }
+        const subscription = await API.getSubscription(adminId);
+        setSubscriptionStatus(subscription.status as 'active' | 'inactive' | 'expired' | 'cancelled');
+        setSubscriptionStartDate(subscription.startDate ? new Date(subscription.startDate) : null);
+        setSubscriptionEndDate(subscription.endDate ? new Date(subscription.endDate) : null);
       } catch (error) {
         console.error('Error fetching subscription:', error);
+        // Default to inactive if fetch fails
+        setSubscriptionStatus('inactive');
       } finally {
         setLoading(false);
       }
@@ -1430,26 +1426,13 @@ const SubscriptionView = ({ adminId }: { adminId: string }) => {
 
     setIsProcessing(true);
     try {
-      // TODO: Replace with actual API call
-      // await API.subscribe(adminId, PLAN_PRICE);
+      const subscription = await API.subscribe(adminId, PLAN_PRICE);
       
-      // Mock subscription activation
-      const startDate = new Date();
-      const endDate = new Date();
-      endDate.setMonth(endDate.getMonth() + 1);
-
-      const subscription = {
-        status: 'active' as const,
-        startDate: startDate.toISOString(),
-        endDate: endDate.toISOString(),
-      };
-
-      localStorage.setItem(`subscription_${adminId}`, JSON.stringify(subscription));
       setSubscriptionStatus('active');
-      setSubscriptionStartDate(startDate);
-      setSubscriptionEndDate(endDate);
+      setSubscriptionStartDate(new Date(subscription.startDate));
+      setSubscriptionEndDate(new Date(subscription.endDate));
       
-      alert('Subscription activated successfully!');
+      alert('Subscription activated successfully! Your subscription is now active and will appear in the Super Admin dashboard.');
     } catch (error: any) {
       console.error('Error subscribing:', error);
       alert(error.message || 'Failed to activate subscription');
@@ -1465,18 +1448,8 @@ const SubscriptionView = ({ adminId }: { adminId: string }) => {
 
     setIsProcessing(true);
     try {
-      // TODO: Replace with actual API call
-      // await API.cancelSubscription(adminId);
-      
-      // Mock subscription cancellation
-      const storedSubscription = localStorage.getItem(`subscription_${adminId}`);
-      if (storedSubscription) {
-        const sub = JSON.parse(storedSubscription);
-        sub.status = 'cancelled';
-        localStorage.setItem(`subscription_${adminId}`, JSON.stringify(sub));
-        setSubscriptionStatus('cancelled');
-      }
-      
+      await API.cancelSubscription(adminId);
+      setSubscriptionStatus('cancelled');
       alert('Subscription cancelled. You will have access until the end of the current billing period.');
     } catch (error: any) {
       console.error('Error cancelling subscription:', error);

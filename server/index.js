@@ -2111,6 +2111,196 @@ app.patch('/api/orders/:orderId/status', async (req, res) => {
   }
 });
 
+// ============================================
+// SUPER ADMIN ENDPOINTS
+// ============================================
+
+// Get super admin dashboard statistics
+app.get('/api/super-admin/stats', async (req, res) => {
+  try {
+    // Get total restaurants (admins with restaurant_name)
+    const restaurantsResult = await pool.query(
+      `SELECT COUNT(*) as count FROM admin WHERE restaurant_name IS NOT NULL AND restaurant_name != ''`
+    );
+    const totalRestaurants = parseInt(restaurantsResult.rows[0].count);
+
+    // Get total users from all tables
+    const adminCount = await pool.query('SELECT COUNT(*) as count FROM admin');
+    const staffCount = await pool.query('SELECT COUNT(*) as count FROM staff');
+    const kitchenCount = await pool.query('SELECT COUNT(*) as count FROM kitchen');
+    const customerCount = await pool.query('SELECT COUNT(*) as count FROM customer');
+    const totalUsers = parseInt(adminCount.rows[0].count) + 
+                       parseInt(staffCount.rows[0].count) + 
+                       parseInt(kitchenCount.rows[0].count) + 
+                       parseInt(customerCount.rows[0].count);
+
+    // Get active subscriptions (mock for now - you'll need to create subscriptions table)
+    // For now, we'll count admins with restaurant_name as "active" subscriptions
+    const activeSubscriptions = totalRestaurants;
+
+    // Calculate total revenue from orders (last 30 days)
+    const revenueResult = await pool.query(
+      `SELECT COALESCE(SUM(total_amount), 0) as total 
+       FROM orders 
+       WHERE created_at >= NOW() - INTERVAL '30 days' AND status != 'CANCELLED'`
+    );
+    const totalRevenue = parseFloat(revenueResult.rows[0].total) || 0;
+
+    // Calculate changes (mock for now - you can implement proper comparison)
+    const stats = {
+      totalRestaurants,
+      totalUsers,
+      activeSubscriptions,
+      totalRevenue: totalRevenue * 0.1, // 10% commission (adjust as needed)
+      restaurantsChange: 0, // TODO: Calculate from previous period
+      usersChange: 0, // TODO: Calculate from previous period
+      subscriptionsChange: 0, // TODO: Calculate from previous period
+      revenueChange: 0, // TODO: Calculate from previous period
+    };
+
+    res.json(stats);
+  } catch (error) {
+    console.error('Error fetching super admin stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all restaurants
+app.get('/api/super-admin/restaurants', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT 
+        id,
+        restaurant_name as name,
+        id as admin_id,
+        name as admin_name,
+        email as admin_email,
+        number_of_tables,
+        created_at,
+        registration_status
+      FROM admin 
+      WHERE restaurant_name IS NOT NULL AND restaurant_name != ''
+      ORDER BY created_at DESC`
+    );
+
+    const restaurants = result.rows.map(row => ({
+      id: `rest_${row.id}`,
+      name: row.name || 'Unnamed Restaurant',
+      adminId: row.admin_id.toString(),
+      adminName: row.admin_name || 'Unknown',
+      adminEmail: row.admin_email,
+      numberOfTables: row.number_of_tables || 0,
+      createdAt: row.created_at.toISOString(),
+      subscriptionStatus: row.registration_status === 'approved' ? 'active' : 'inactive',
+    }));
+
+    res.json(restaurants);
+  } catch (error) {
+    console.error('Error fetching restaurants:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all users
+app.get('/api/super-admin/users', async (req, res) => {
+  try {
+    // Get users from all tables
+    const adminUsers = await pool.query(
+      `SELECT id, email, name, 'ADMIN' as role, created_at FROM admin`
+    );
+    const staffUsers = await pool.query(
+      `SELECT id, email, name, 'STAFF' as role, created_at, admin_id FROM staff`
+    );
+    const kitchenUsers = await pool.query(
+      `SELECT id, email, name, 'KITCHEN' as role, created_at, admin_id FROM kitchen`
+    );
+    const customerUsers = await pool.query(
+      `SELECT id, email, name, 'CUSTOMER' as role, created_at FROM customer`
+    );
+
+    const allUsers = [
+      ...adminUsers.rows.map(row => ({
+        id: `admin_${row.id}`,
+        email: row.email,
+        name: row.name,
+        role: row.role,
+        createdAt: row.created_at.toISOString(),
+      })),
+      ...staffUsers.rows.map(row => ({
+        id: `staff_${row.id}`,
+        email: row.email,
+        name: row.name,
+        role: row.role,
+        adminId: row.admin_id ? row.admin_id.toString() : null,
+        createdAt: row.created_at.toISOString(),
+      })),
+      ...kitchenUsers.rows.map(row => ({
+        id: `kitchen_${row.id}`,
+        email: row.email,
+        name: row.name,
+        role: row.role,
+        adminId: row.admin_id ? row.admin_id.toString() : null,
+        createdAt: row.created_at.toISOString(),
+      })),
+      ...customerUsers.rows.map(row => ({
+        id: `customer_${row.id}`,
+        email: row.email,
+        name: row.name,
+        role: row.role,
+        createdAt: row.created_at.toISOString(),
+      })),
+    ];
+
+    res.json(allUsers);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get all subscriptions
+app.get('/api/super-admin/subscriptions', async (req, res) => {
+  try {
+    // For now, we'll create subscriptions based on admin restaurant registrations
+    // In the future, you should create a proper subscriptions table
+    const result = await pool.query(
+      `SELECT 
+        id,
+        restaurant_name,
+        email as admin_email,
+        created_at,
+        registration_status
+      FROM admin 
+      WHERE restaurant_name IS NOT NULL AND restaurant_name != ''
+      ORDER BY created_at DESC`
+    );
+
+    const subscriptions = result.rows.map((row, index) => {
+      const startDate = new Date(row.created_at);
+      const endDate = new Date(startDate);
+      endDate.setMonth(endDate.getMonth() + 1); // 1 month subscription
+
+      return {
+        id: `sub_${row.id}`,
+        restaurantId: `rest_${row.id}`,
+        restaurantName: row.restaurant_name,
+        adminId: row.id.toString(),
+        adminEmail: row.email,
+        status: row.registration_status === 'approved' ? 'active' : 'inactive',
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        amount: 200, // ₹200 per month
+        createdAt: row.created_at.toISOString(),
+      };
+    });
+
+    res.json(subscriptions);
+  } catch (error) {
+    console.error('Error fetching subscriptions:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: 'Server is running' });

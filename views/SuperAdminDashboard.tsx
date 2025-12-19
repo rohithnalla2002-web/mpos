@@ -154,23 +154,21 @@ const DashboardView = () => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        // TODO: Replace with actual API call
-        // const data = await API.getSuperAdminStats();
-        
-        // Mock data for now
-        const mockStats: DashboardStats = {
-          totalRestaurants: 25,
-          totalUsers: 150,
-          activeSubscriptions: 18,
-          totalRevenue: 3600,
-          restaurantsChange: 12.5,
-          usersChange: 8.3,
-          subscriptionsChange: 15.0,
-          revenueChange: 22.0,
-        };
-        setStats(mockStats);
+        const data = await API.getSuperAdminStats();
+        setStats(data);
       } catch (error) {
         console.error('Error fetching stats:', error);
+        // Set default values on error
+        setStats({
+          totalRestaurants: 0,
+          totalUsers: 0,
+          activeSubscriptions: 0,
+          totalRevenue: 0,
+          restaurantsChange: 0,
+          usersChange: 0,
+          subscriptionsChange: 0,
+          revenueChange: 0,
+        });
       } finally {
         setLoading(false);
       }
@@ -355,23 +353,11 @@ const RestaurantsView = () => {
     const fetchRestaurants = async () => {
       try {
         setLoading(true);
-        // TODO: Replace with actual API call
-        // const data = await API.getAllRestaurants();
-        
-        // Mock data
-        const mockRestaurants: Restaurant[] = Array.from({ length: 25 }, (_, i) => ({
-          id: `rest_${i + 1}`,
-          name: `Restaurant ${i + 1}`,
-          adminId: `admin_${i + 1}`,
-          adminName: `Admin ${i + 1}`,
-          adminEmail: `admin${i + 1}@restaurant.com`,
-          numberOfTables: Math.floor(Math.random() * 20) + 5,
-          createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
-          subscriptionStatus: ['active', 'inactive', 'cancelled'][Math.floor(Math.random() * 3)] as any,
-        }));
-        setRestaurants(mockRestaurants);
+        const data = await API.getAllRestaurants();
+        setRestaurants(data);
       } catch (error) {
         console.error('Error fetching restaurants:', error);
+        setRestaurants([]);
       } finally {
         setLoading(false);
       }
@@ -496,19 +482,11 @@ const UsersView = () => {
     const fetchUsers = async () => {
       try {
         setLoading(true);
-        // TODO: Replace with actual API call
-        // const data = await API.getAllUsers();
-        
-        // Mock data
-        const mockUsers: User[] = Array.from({ length: 150 }, (_, i) => ({
-          id: `user_${i + 1}`,
-          email: `user${i + 1}@example.com`,
-          name: `User ${i + 1}`,
-          role: Object.values(UserRole)[Math.floor(Math.random() * Object.values(UserRole).length)] as UserRole,
-        }));
-        setUsers(mockUsers);
+        const data = await API.getAllUsers();
+        setUsers(data);
       } catch (error) {
         console.error('Error fetching users:', error);
+        setUsers([]);
       } finally {
         setLoading(false);
       }
@@ -636,30 +614,11 @@ const SubscriptionsView = () => {
     const fetchSubscriptions = async () => {
       try {
         setLoading(true);
-        // TODO: Replace with actual API call
-        // const data = await API.getAllSubscriptions();
-        
-        // Mock data
-        const mockSubscriptions: Subscription[] = Array.from({ length: 18 }, (_, i) => {
-          const startDate = new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000);
-          const endDate = new Date(startDate);
-          endDate.setMonth(endDate.getMonth() + 1);
-          return {
-            id: `sub_${i + 1}`,
-            restaurantId: `rest_${i + 1}`,
-            restaurantName: `Restaurant ${i + 1}`,
-            adminId: `admin_${i + 1}`,
-            adminEmail: `admin${i + 1}@restaurant.com`,
-            status: ['active', 'inactive', 'cancelled', 'expired'][Math.floor(Math.random() * 4)] as any,
-            startDate: startDate.toISOString(),
-            endDate: endDate.toISOString(),
-            amount: 200,
-            createdAt: startDate.toISOString(),
-          };
-        });
-        setSubscriptions(mockSubscriptions);
+        const data = await API.getAllSubscriptions();
+        setSubscriptions(data);
       } catch (error) {
         console.error('Error fetching subscriptions:', error);
+        setSubscriptions([]);
       } finally {
         setLoading(false);
       }

@@ -596,5 +596,109 @@ export const API = {
       throw error;
     }
   },
+
+  // ============================================
+  // SUPER ADMIN API METHODS
+  // ============================================
+
+  // Get super admin dashboard statistics
+  getSuperAdminStats: async (): Promise<{
+    totalRestaurants: number;
+    totalUsers: number;
+    activeSubscriptions: number;
+    totalRevenue: number;
+    restaurantsChange: number;
+    usersChange: number;
+    subscriptionsChange: number;
+    revenueChange: number;
+  }> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/super-admin/stats`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch super admin stats');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error fetching super admin stats:', error);
+      throw error;
+    }
+  },
+
+  // Get all restaurants
+  getAllRestaurants: async (): Promise<any[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/super-admin/restaurants`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch restaurants');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error fetching restaurants:', error);
+      throw error;
+    }
+  },
+
+  // Get all users
+  getAllUsers: async (): Promise<User[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/super-admin/users`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+
+      const users = await response.json();
+      return users.map((u: any) => ({
+        id: u.id,
+        email: u.email,
+        name: u.name,
+        role: u.role as UserRole,
+        adminId: u.adminId,
+      }));
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+      throw error;
+    }
+  },
+
+  // Get all subscriptions
+  getAllSubscriptions: async (): Promise<any[]> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/super-admin/subscriptions`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch subscriptions');
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error('Error fetching subscriptions:', error);
+      throw error;
+    }
+  },
 };
 

@@ -1551,7 +1551,8 @@ app.get('/api/qr/menu', async (req, res) => {
     // Use explicit integer comparison and exclude NULL values
     // REMOVED is_out_of_stock filter to show ALL items for debugging
     const menuResult = await pool.query(
-      `SELECT id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock, admin_id 
+      `SELECT id, name, description, price, category, image, is_vegetarian, is_spicy, is_out_of_stock, admin_id, 
+              COALESCE(rating, 0) as rating, COALESCE(review_count, 0) as review_count
        FROM menu_items 
        WHERE admin_id IS NOT NULL 
          AND admin_id = $1::integer
@@ -1672,6 +1673,8 @@ app.get('/api/qr/menu', async (req, res) => {
           isVegetarian: row.is_vegetarian || false,
           isSpicy: row.is_spicy || false,
           isOutOfStock: row.is_out_of_stock || false,
+          rating: parseFloat(row.rating) || 0,
+          reviewCount: parseInt(row.review_count) || 0,
         };
         
         console.log(`✅ Item ${index + 1}: ${menuItem.name} (Category: ${menuItem.category}, Price: ₹${menuItem.price})`);

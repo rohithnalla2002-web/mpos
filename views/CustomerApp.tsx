@@ -235,11 +235,23 @@ export const CustomerApp: React.FC<CustomerAppProps> = ({ initialTableId, user }
       if (restaurantId && tableId) {
         console.log('🔵 ✅ Valid QR code detected! Navigating to menu page:', { restaurantId, tableId });
         
+        // Clean the IDs to ensure they're just numbers (remove any URL fragments)
+        const cleanRestaurantId = restaurantId.toString().trim().replace(/[^0-9]/g, '');
+        const cleanTableId = tableId.toString().trim().replace(/[^0-9]/g, '');
+        
+        if (!cleanRestaurantId || !cleanTableId) {
+          console.error('❌ Invalid IDs after cleaning:', { restaurantId, tableId, cleanRestaurantId, cleanTableId });
+          setScanError('Invalid QR Code: Could not extract restaurant and table information');
+          return;
+        }
+        
         // Build the local menu URL (always use relative path for local navigation)
-        const menuUrl = `/menu?restaurant=${encodeURIComponent(restaurantId)}&table=${encodeURIComponent(tableId)}`;
+        const menuUrl = `/menu?restaurant=${encodeURIComponent(cleanRestaurantId)}&table=${encodeURIComponent(cleanTableId)}`;
         console.log('🔵 Navigation URL:', menuUrl);
+        console.log('🔵 Full URL will be:', window.location.origin + menuUrl);
         
         // Force a full page reload to ensure App.tsx re-renders with new route
+        // This ensures the menu route is properly detected and rendered
         window.location.href = menuUrl;
         return;
       }

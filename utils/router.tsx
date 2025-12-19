@@ -34,8 +34,11 @@ class Router {
       this.currentRoute = 'login';
     } else if (path === '/dashboard' || path === '/dashboard/') {
       this.currentRoute = 'dashboard';
-    } else if (path === '/menu' || path === '/menu/') {
+    } else if (path === '/menu' || path === '/menu/' || path.startsWith('/menu')) {
       // QR menu route - keep as landing so it doesn't require auth
+      this.currentRoute = 'landing';
+    } else if (path === '/orders' || path === '/orders/' || path.startsWith('/orders')) {
+      // Orders route - keep as landing so it doesn't require auth
       this.currentRoute = 'landing';
     } else {
       this.currentRoute = 'landing';

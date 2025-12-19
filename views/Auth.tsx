@@ -132,13 +132,16 @@ export const Auth: React.FC<AuthProps> = ({ onLogin, onBack }) => {
           <div className="animate-slide-up" style={{ animationDelay: '200ms' }}>
             <label className="block text-xs font-bold uppercase text-slate-400 mb-1 ml-1">Password</label>
             <div className="relative group">
-              <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors" />
+              <Lock className="absolute left-3 top-3 h-5 w-5 text-slate-400 group-focus-within:text-emerald-500 transition-colors pointer-events-none z-10" />
               <input
                 type="password"
                 value={password}
                 onChange={e => setPassword(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
+                onInput={e => setPassword((e.target as HTMLInputElement).value)}
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all relative z-20"
                 placeholder="••••••••"
+                autoComplete="current-password"
+                disabled={loading}
               />
             </div>
           </div>

@@ -12,6 +12,22 @@ dist
 dist-ssr
 *.local
 
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Build artifacts
+*.zip
+mobile-app.zip
+
+# Mobile app build files
+mobile-app/node_modules
+mobile-app/.expo
+mobile-app/.metro
+mobile-app/dist
+mobile-app/build
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

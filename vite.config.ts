@@ -16,6 +16,23 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
-      }
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: (id) => {
+              // Separate vendor chunks to avoid circular dependency issues
+              if (id.includes('node_modules')) {
+                if (id.includes('react') || id.includes('react-dom')) {
+                  return 'react-vendor';
+                }
+                return 'vendor';
+              }
+            },
+          },
+        },
+        minify: 'esbuild', // Use esbuild for faster builds
+        sourcemap: false, // Disable sourcemaps in production
+      },
     };
 });

@@ -763,16 +763,38 @@ export const SuperAdminDashboard = ({ user, onLogout }: { user: User, onLogout: 
         setIsOpen={setSidebarOpen}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 lg:ml-80 p-4 sm:p-6 overflow-y-auto min-h-screen">
-        {/* Mobile Menu Button */}
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="lg:hidden fixed top-4 left-4 z-30 p-2 bg-white rounded-lg shadow-lg border border-slate-200 hover:bg-slate-50 transition-colors touch-manipulation"
-        >
-          <MenuIcon className="w-6 h-6 text-slate-700" />
-        </button>
+      {/* Mobile Top Bar */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-xl border-b border-slate-200/50 shadow-lg">
+        <div className="flex items-center justify-between px-4 h-16">
+          {/* Menu Button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg hover:bg-slate-100 active:bg-slate-200 transition-colors touch-manipulation"
+          >
+            <MenuIcon className="w-6 h-6 text-slate-700" />
+          </button>
 
+          {/* Title */}
+          <div className="flex-1 flex items-center justify-center px-4">
+            <div className="text-center min-w-0">
+              <h2 className="text-base font-bold text-slate-900 truncate">
+                Super Admin
+              </h2>
+              <p className="text-xs text-slate-600 truncate">
+                System Management
+              </p>
+            </div>
+          </div>
+
+          {/* User Avatar */}
+          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-md">
+            {user.name.charAt(0).toUpperCase()}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content Area */}
+      <div className="flex-1 lg:ml-80 p-4 sm:p-6 overflow-y-auto min-h-screen pt-20 lg:pt-4">
         <div className="max-w-7xl mx-auto">
           {activePage === 'dashboard' && <DashboardView />}
           {activePage === 'restaurants' && <RestaurantsView />}
